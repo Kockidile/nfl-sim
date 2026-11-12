@@ -411,7 +411,7 @@ function viewGame(id){
       return `<div class="who"><div><div>${esc(p.name)} <span class="dim small">${esc(p.pos)}</span></div><div class="tiny dim">${esc(p.status || "no injury listed")}${p.pid in OVERRIDES ? " · <b style='color:var(--warn)'>you changed this</b>" : ""}</div></div>
         <select data-override="${esc(p.pid)}" data-gid="${g.id}">${opts.map(([v,l]) => `<option value="${v}" ${Math.abs(v-cur)<1e-9?"selected":""}>${l}</option>`).join("")}</select></div>`;
     }).join("");
-    const others = side.injuries.filter(i => !side.players.some(p => p.name === i.name));
+    const others = side.injuries.filter(i => !/^active$/i.test(i.status) && !side.players.some(p => p.name === i.name));
     if (others.length) html += `<details style="margin-top:8px"><summary>Full ${esc(abbr)} injury report (${others.length} more)</summary>${others.map(i => `<div class="small" style="padding:4px 0"><b>${esc(i.pos)}</b> ${esc(i.name)} — <span class="${/out|reserve/i.test(i.status) ? "ev-neg" : ""}">${esc(i.status)}</span> <span class="dim">${esc(i.detail)}</span></div>`).join("")}</details>`;
     for (const n of side.notes) html += `<div class="note">ℹ️ ${esc(n)}</div>`;
   }
