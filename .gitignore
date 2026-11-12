@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.nfl_cache/
+out/
