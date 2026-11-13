@@ -38,7 +38,7 @@ def _side_json(side, injuries):
                          "minutes": round(p.minutes, 1), "note": p.note,
                          "mean": {k: round(float(v), 2) for k, v in p.mean.items()},
                          "cv": {k: round(float(v), 3) for k, v in p.cv.items()},
-                         "season_avg": p.season_avg} for p in side.players],
+                         "season_avg": p.season_avg, "l5": p.l5, "gp": p.gp} for p in side.players],
             "injuries": [{"name": i.name, "pos": i.pos, "status": i.status, "detail": i.detail} for i in injuries]}
 
 

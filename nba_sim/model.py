@@ -29,6 +29,8 @@ class PlayerIn:
     cv: dict
     season_avg: dict
     note: str = ""
+    l5: dict = field(default_factory=dict)
+    gp: int = 0
 
 
 @dataclass
@@ -131,7 +133,8 @@ def build_side(team_id, opp_id, abbr, teams, players, injuries, roster, game_pac
         else:
             pos = r.pos
         plist.append(PlayerIn(pid, r["name"], pos, p, status, float(minutes), mean, cv,
-                              {s: round(float(r[f"{s}_avg"]), 1) for s in S}, note))
+                              {s: round(float(r[f"{s}_avg"]), 1) for s in S}, note,
+                              {s: round(float(r[f"{s}_l5"]), 1) for s in S}, int(r.gp)))
         if len(plist) >= config.MAX_PLAYERS:
             break
     back = [p.name for p in plist if p.note]
