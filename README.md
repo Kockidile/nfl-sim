@@ -2,6 +2,13 @@
 
 ## Phone web app
 
+Two sports share one site: `docs/index.html` (NFL) and `docs/nba.html` (NBA),
+switchable from the header. The NBA model (`nba_sim/`) projects points,
+rebounds, assists and 3-pointers from per-minute rates × expected minutes,
+adjusted for game pace, opponent defense, back-to-backs and home court;
+injuries reshuffle production to teammates, and blowouts cut starters' minutes.
+`python -m nba_sim slate` prints tonight's projections in a terminal.
+
 The app lives in `docs/` and is served by GitHub Pages. A GitHub Action
 (`.github/workflows/update-data.yml`) pulls fresh ESPN, injury and weather
 data every 3 hours (hourly on Sundays), runs the model, and commits

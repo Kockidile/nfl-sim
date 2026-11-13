@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="NFL Sim">
+<meta name="apple-mobile-web-app-title" content="Sim">
 <meta name="theme-color" content="#0a0f1a">
 <link rel="apple-touch-icon" href="icon.png">
 <title>NFL Sim</title>
@@ -80,11 +80,17 @@ th.on{color:var(--accent)}
 .who select{padding:6px 8px;font-size:13px}
 details summary{cursor:pointer;color:var(--blue);font-weight:600;list-style:none}
 details summary::-webkit-details-marker{display:none}
+.sport{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sport a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:700;padding:6px 12px}
+.sport a.on{background:var(--accent);color:#04210f}
 </style>
 </head>
 <body>
 <header>
-  <h1>NFL Sim <span class="wk" id="wk">—</span></h1>
+  <div class="row between">
+    <h1>NFL Sim <span class="wk" id="wk">—</span></h1>
+    <div class="sport"><a class="on" href="index.html">NFL</a><a href="nba.html">NBA</a></div>
+  </div>
   <div class="sub" id="updated">Loading data…</div>
 </header>
 <main id="app"><div class="empty">Loading…</div></main>

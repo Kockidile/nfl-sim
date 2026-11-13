@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sim">
+<meta name="theme-color" content="#0a0f1a">
+<link rel="apple-touch-icon" href="icon.png">
+<title>NBA Sim</title>
+<style>
+:root{
+  --bg:#0a0f1a; --card:#121a2b; --card2:#18223a; --line:#24304a; --text:#e8edf7; --dim:#8b97b0;
+  --accent:#3ddc84; --accent-d:#1f8f52; --warn:#f5b742; --bad:#ff5d5d; --blue:#5aa9ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(76px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+header{position:sticky;top:0;z-index:5;background:rgba(10,15,26,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:20px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+header h1 .wk{font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:2px 7px}
+header .sub{color:var(--dim);font-size:12px;margin-top:2px}
+main{padding:12px 12px 0;max-width:720px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.game{display:block;color:inherit;text-decoration:none}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.team{font-weight:700;font-size:17px;min-width:44px}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;font-weight:800;font-size:14px;background:var(--card2);border:1px solid var(--line)}
+.dim{color:var(--dim)} .small{font-size:12px} .tiny{font-size:11px}
+.bar{height:6px;border-radius:4px;background:var(--card2);overflow:hidden;display:flex;margin:10px 0 8px}
+.bar>div{height:100%}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--dim);border:1px solid var(--line)}
+.pill.q{color:var(--warn);border-color:#5b4a1f}.pill.o{color:var(--bad);border-color:#5c2a2a}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.kpi{background:var(--card2);border-radius:12px;padding:8px 10px}
+.kpi b{display:block;font-size:17px}
+.kpi span{font-size:11px;color:var(--dim)}
+h2{font-size:15px;margin:18px 4px 8px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+button,.btn{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:#04210f;border-color:var(--accent);font-weight:700}
+button.ghost{background:transparent}
+button:active{transform:scale(.98)}
+.legbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.legbtns button{text-align:left}
+.legbtns button b{display:block}
+.legbtns button span{font-size:12px;color:var(--dim)}
+.prop{border-top:1px solid var(--line);padding:10px 2px}
+.prop:first-child{border-top:none}
+.prop .name{font-weight:600}
+.prop .exp{margin-top:10px;display:none}
+.prop.open .exp{display:block}
+.num{font-variant-numeric:tabular-nums}
+input[type=number],select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;background:transparent;padding:8px 4px;font-size:13px}
+.seg button.on{background:var(--accent);color:#04210f;font-weight:700}
+.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;display:flex;background:rgba(10,15,26,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.tabs a{flex:1;text-align:center;color:var(--dim);text-decoration:none;font-size:11px;padding:6px 0;border-radius:10px;position:relative}
+.tabs a svg{display:block;margin:0 auto 2px;width:22px;height:22px}
+.tabs a.on{color:var(--accent)}
+.count{position:absolute;top:0;left:55%;background:var(--accent);color:#04210f;font-weight:800;font-size:10px;border-radius:999px;padding:1px 6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600;font-size:11px;cursor:pointer;white-space:nowrap}
+th.on{color:var(--accent)}
+.rk{display:inline-block;min-width:26px;border-radius:6px;padding:1px 4px;text-align:center;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--accent);color:#04210f;font-weight:700;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+.big{font-size:30px;font-weight:800;letter-spacing:-.5px}
+.ev-pos{color:var(--accent)} .ev-neg{color:var(--bad)}
+.back{color:var(--accent);text-decoration:none;font-weight:600;display:inline-block;margin:2px 4px 10px}
+.note{font-size:12px;color:var(--dim);margin-top:6px}
+.empty{text-align:center;color:var(--dim);padding:40px 16px}
+.who{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.who:first-of-type{border-top:none}
+.who select{padding:6px 8px;font-size:13px}
+details summary{cursor:pointer;color:var(--blue);font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+.sport{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sport a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:700;padding:6px 12px}
+.sport a.on{background:var(--accent);color:#2a1300}
+
+:root{--accent:#ff8a3d;--accent-d:#c2581b}
+header h1 .wk{color:#2a1300}
+button.primary,.seg button.on{color:#2a1300}
+.count,.toast{color:#2a1300}
+.day{font-size:13px;font-weight:700;color:var(--dim);margin:16px 4px 8px;text-transform:uppercase;letter-spacing:.6px}
+.statchips{display:flex;gap:6px;overflow-x:auto;margin:-2px 0 10px;padding-bottom:2px}
+.statchips button{padding:6px 12px;border-radius:999px;font-size:13px;white-space:nowrap}
+.statchips button.on{background:var(--accent);border-color:var(--accent);color:#2a1300;font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div class="row between">
+    <h1>NBA Sim <span class="wk" id="wk">—</span></h1>
+    <div class="sport"><a href="index.html">NFL</a><a class="on" href="nba.html">NBA</a></div>
+  </div>
+  <div class="sub" id="updated">Loading data…</div>
+</header>
+<main id="app"><div class="empty">Loading…</div></main>
+<nav class="tabs">
+  <a href="#games" data-tab="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c3.5 3.5 3.5 9.3 0 12.8M18.4 5.6c-3.5 3.5-3.5 9.3 0 12.8"/></svg>Games</a>
+  <a href="#slip" data-tab="slip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Parlay<span class="count" id="slipcount" hidden>0</span></a>
+  <a href="#rankings" data-tab="rankings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Rankings</a>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const N_SIMS = 10000;
+const STATS = ["pts","reb","ast","fg3"];
+const COMBOS = {pra:["pts","reb","ast"], pr:["pts","reb"], pa:["pts","ast"], ra:["reb","ast"]};
+const LABEL = {pts:"Points", reb:"Rebounds", ast:"Assists", fg3:"3-pointers", pra:"Pts+Reb+Ast", pr:"Pts+Reb", pa:"Pts+Ast", ra:"Reb+Ast"};
+const SHORT = {pts:"PTS", reb:"REB", ast:"AST", fg3:"3PM", pra:"PRA", pr:"P+R", pa:"P+A", ra:"R+A"};
+const MIN_SHOW = {pts:4, reb:2, ast:1.5, fg3:.6, pra:8, pr:6, pa:6, ra:3};
+let DATA = null, CFG = null;
+const SIMS = {};
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let OVERRIDES = store.get("nbasim.overrides", {});
+let SLIP = store.get("nbasim.slip", []);
+let BOOK_ODDS = store.get("nbasim.book", "");
+let RANK_SORT = "rk_net";
+let PROP_STAT = store.get("nbasim.propstat", "pts");
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = p => Number.isFinite(p) ? (p*100).toFixed(1) + "%" : "—";
+const half = x => Math.round(x*2)/2;
+const hookLine = x => { const h = half(x); return h % 1 ? h : h + .5; };
+const fmtLine = x => (x>0?"+":"") + x;
+function american(p){ if (!Number.isFinite(p)) return "—"; p = Math.min(Math.max(p,1e-4),1-1e-4); return p >= .5 ? String(Math.round(-100*p/(1-p))) : "+" + Math.round(100*(1-p)/p); }
+function amToDec(a){ a = Number(a); if(!a || Math.abs(a) < 100) return null; return a > 0 ? 1 + a/100 : 1 + 100/(-a); }
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1400); }
+function tip(g){ const d = new Date(g.date); return isNaN(d) ? g.date : d.toLocaleString([], {weekday:"short", hour:"numeric", minute:"2-digit"}); }
+function dayLabel(g){ const d = new Date(g.date); return isNaN(d) ? g.day : d.toLocaleDateString([], {weekday:"long", month:"short", day:"numeric"}); }
+function ago(iso){ const m = Math.round((Date.now() - new Date(iso))/60000); return m < 60 ? m + " min ago" : m < 1440 ? Math.round(m/60) + " h ago" : Math.round(m/1440) + " d ago"; }
+function saveSlip(){ store.set("nbasim.slip", SLIP); updateCount(); }
+function updateCount(){ const c=$("#slipcount"); c.textContent=SLIP.length; c.hidden=!SLIP.length; }
+const gameById = id => DATA.games.find(g => g.id === id);
+const pPlay = p => (p.pid in OVERRIDES) ? OVERRIDES[p.pid] : p.p_play;
+function teamColor(a){ let h=0; for (const c of a) h=(h*31+c.charCodeAt(0))%360; return `hsl(${h} 60% 50%)`; }
+function badge(a){ return `<span class="badge" style="border-color:${teamColor(a)};color:${teamColor(a)}">${esc(a)}</span>`; }
+
+// ============================================================ random
+function mulberry(seed){ let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function makeRand(seed){
+  const u = mulberry(seed); let spare = null;
+  const normal = () => { if (spare !== null){ const s = spare; spare = null; return s; }
+    let a,b,r; do { a=u()*2-1; b=u()*2-1; r=a*a+b*b; } while (r>=1||r===0); const f=Math.sqrt(-2*Math.log(r)/r); spare=b*f; return a*f; };
+  const gamma = k => { if (k < 1) return gamma(k+1)*Math.pow(u(),1/k);
+    const d=k-1/3, c=1/Math.sqrt(9*d);
+    for(;;){ let x,v; do { x=normal(); v=1+c*x; } while (v<=0); v=v*v*v; const uu=u();
+      if (uu < 1-.0331*x*x*x*x || Math.log(uu) < .5*x*x + d*(1-v+Math.log(v))) return d*v; } };
+  return {u, normal, gamma};
+}
+
+// ============================================================ simulation (port of nba_sim/model.py)
+function prep(side){
+  const P = side.players.length;
+  return {side, P,
+    base: side.players.map(p => STATS.map(s => p.mean[s] || 0)),
+    k: side.players.map(p => STATS.map(s => 1/(p.cv[s]**2))),
+    pp: side.players.map(pPlay),
+    starter: side.players.map(p => p.minutes >= CFG.STARTER_MIN),
+    ptsSum: Math.max(side.players.reduce((a,p)=>a+(p.mean.pts||0),0), 1),
+    y: side.players.map(() => STATS.map(() => new Float32Array(N_SIMS))),
+    played: side.players.map(() => new Uint8Array(N_SIMS)),
+    pts: new Float32Array(N_SIMS), av: new Array(P)};
+}
+function step(S, i, pace, R){
+  const C = CFG, {P, base, pp, av} = S;
+  for (let j=0;j<P;j++) av[j] = R.u() < pp[j];
+  const boost = [1,1,1,1];
+  let lost = 0;
+  for (let c=0;c<4;c++){
+    let miss=0, have=0;
+    for (let j=0;j<P;j++){ if (av[j]) have += base[j][c]; else miss += base[j][c]; }
+    boost[c] = 1 + C.RETAIN*miss/Math.max(have,1e-6);
+    if (c===0) lost = miss / S.ptsSum;
+  }
+  const sd = C.TEAM_FORM_SD, form = Math.exp(-sd*sd/2 + sd*R.normal());
+  S.pts[i] = Math.round(S.side.pts_mu*(1 - C.STAR_LOSS_PTS*lost)*form*pace + R.normal()*C.SCORE_NOISE_SD);
+  const beta = [C.PLAYER_FORM_BETA, .3, .6, C.PLAYER_FORM_BETA];
+  for (let j=0;j<P;j++){
+    S.played[j][i] = av[j] ? 1 : 0;
+    if (!av[j]) continue;
+    for (let c=0;c<4;c++){
+      const v = base[j][c]*boost[c];
+      if (v > 0){ const kk = S.k[j][c]; S.y[j][c][i] = v*Math.pow(form,beta[c])*pace*R.gamma(kk)/kk; }
+    }
+  }
+}
+function simulate(g){
+  const R = makeRand(987654 + Number(String(g.id).slice(-6)));
+  const H = prep(g.sides.home), A = prep(g.sides.away), C = CFG;
+  for (let i=0;i<N_SIMS;i++){
+    const pace = Math.exp(-C.PACE_SD*C.PACE_SD/2 + C.PACE_SD*R.normal());
+    step(H,i,pace,R); step(A,i,pace,R);
+    for (let ot=0; ot<4 && H.pts[i]===A.pts[i]; ot++){ H.pts[i] += Math.round(11+3*R.normal()); A.pts[i] += Math.round(11+3*R.normal()); }
+    if (H.pts[i]===A.pts[i]) H.pts[i] += 1;
+    const m = Math.abs(H.pts[i]-A.pts[i]);
+    const blow = Math.max(C.BLOWOUT_FLOOR, 1 - C.BLOWOUT_PER_PT*Math.max(m - C.BLOWOUT_START, 0));
+    if (blow < 1) for (const S of [H,A]) for (let j=0;j<S.P;j++) if (S.starter[j]) for (let c=0;c<4;c++) S.y[j][c][i] *= blow;
+  }
+  const players = {};
+  for (const [S, abbr] of [[H,g.home.abbr],[A,g.away.abbr]])
+    S.side.players.forEach((p,j) => players[p.pid] = {p, team: abbr, played: S.played[j], y: {pts:S.y[j][0], reb:S.y[j][1], ast:S.y[j][2], fg3:S.y[j][3]}});
+  return {hp: H.pts, ap: A.pts, players};
+}
+const getSim = g => SIMS[g.id] || (SIMS[g.id] = simulate(g));
+function statVal(P, stat, i){ if (COMBOS[stat]){ let s=0; for (const k of COMBOS[stat]) s += P.y[k][i]; return s; } return P.y[stat][i]; }
+function summarize(r){
+  let hw=0,m=0,t=0,hp=0,ap=0;
+  for (let i=0;i<N_SIMS;i++){ const d=r.hp[i]-r.ap[i]; if (d>0) hw++; m+=d; t+=r.hp[i]+r.ap[i]; hp+=r.hp[i]; ap+=r.ap[i]; }
+  return {home_win:hw/N_SIMS, away_win:1-hw/N_SIMS, spread_home:-m/N_SIMS, total:t/N_SIMS, home_pts:hp/N_SIMS, away_pts:ap/N_SIMS};
+}
+function dist(r, pid, stat){
+  const P = r.players[pid], v = [];
+  for (let i=0;i<N_SIMS;i++) if (P.played[i]) v.push(statVal(P, stat, i));
+  v.sort((a,b)=>a-b);
+  const q = x => v.length ? v[Math.min(v.length-1, Math.floor(x*v.length))] : NaN;
+  return {n: v.length, p10: q(.1), med: q(.5), p90: q(.9), play: v.length/N_SIMS, over: line => { let c=0; for (const x of v) if (x > line) c++; return v.length ? c/v.length : NaN; }};
+}
+
+// ============================================================ legs
+function legLabel(L, g){
+  if (L.type==="ml") return `${L.team} moneyline`;
+  if (L.type==="spread") return `${L.team} ${fmtLine(L.line)}`;
+  if (L.type==="total") return `${g.away.abbr}/${g.home.abbr} ${L.side} ${L.line}`;
+  if (L.type==="tt") return `${L.team} team total ${L.side} ${L.line}`;
+  return `${L.name} ${L.side} ${L.line} ${LABEL[L.stat].toLowerCase()}`;
+}
+function legTest(L, g, r){
+  const isHome = L.team === g.home.abbr;
+  if (L.type==="ml") return i => (isHome ? r.hp[i]-r.ap[i] : r.ap[i]-r.hp[i]) > 0;
+  if (L.type==="spread") return i => (isHome ? r.hp[i]-r.ap[i] : r.ap[i]-r.hp[i]) + L.line > 0;
+  const cmp = v => L.side==="over" ? v > L.line : v < L.line;
+  if (L.type==="total") return i => cmp(r.hp[i]+r.ap[i]);
+  if (L.type==="tt") return i => cmp(isHome ? r.hp[i] : r.ap[i]);
+  const P = r.players[L.pid]; if (!P) return () => false;
+  return i => cmp(statVal(P, L.stat, i));
+}
+function evaluateSlip(){
+  const by = {}; SLIP.forEach((L,idx) => (by[L.gameId] ||= []).push({L,idx}));
+  let joint=1, indep=1; const singles={}, notes=[];
+  for (const gid in by){
+    const g = gameById(gid); if (!g || !g.sides) continue;
+    const r = getSim(g), legs = by[gid], tests = legs.map(({L}) => legTest(L,g,r));
+    const props = legs.filter(({L}) => L.type==="prop" && r.players[L.pid]).map(({L}) => r.players[L.pid]);
+    let valid=0, all=0; const hits = new Array(legs.length).fill(0);
+    for (let i=0;i<N_SIMS;i++){
+      let ok=true; for (const P of props) if (!P.played[i]) { ok=false; break; }
+      if (!ok) continue;
+      valid++; let a=true;
+      for (let t=0;t<tests.length;t++){ if (tests[t](i)) hits[t]++; else a=false; }
+      if (a) all++;
+    }
+    legs.forEach(({idx},t) => { singles[idx] = valid ? hits[t]/valid : NaN; indep *= singles[idx]; });
+    if (!valid){ notes.push(`${g.label}: a prop player never plays with your injury settings. Remove that leg or change his status.`); joint = NaN; continue; }
+    joint *= all/valid;
+    if (valid < N_SIMS*.97) notes.push(`${g.label}: assumes your prop players suit up (${pct(valid/N_SIMS)} of sims); books void props on players who sit.`);
+  }
+  return {joint, indep, singles, notes};
+}
+function addLeg(L){
+  const dup = SLIP.findIndex(x => x.gameId===L.gameId && x.type===L.type && x.team===L.team && x.pid===L.pid && x.stat===L.stat);
+  if (dup >= 0) SLIP[dup] = L; else SLIP.push(L);
+  saveSlip(); toast(`Added · ${SLIP.length} leg${SLIP.length>1?"s":""}`);
+}
+
+// ============================================================ views
+function viewGames(){
+  const games = DATA.games.slice().sort((a,b) => new Date(a.date) - new Date(b.date));
+  if (!games.length) return `<div class="empty">No NBA games today or tomorrow.</div>`;
+  let html = "", lastDay = "";
+  for (const g of games){
+    const dl = dayLabel(g);
+    if (dl !== lastDay){ html += `<div class="day">${esc(dl)}</div>`; lastDay = dl; }
+    if (g.completed){ html += `<div class="card"><div class="row between"><div class="row">${badge(g.away.abbr)}<b>${g.away.score ?? ""}</b></div><span class="pill">FINAL</span><div class="row"><b>${g.home.score ?? ""}</b>${badge(g.home.abbr)}</div></div></div>`; continue; }
+    if (!g.sides){ html += `<div class="card"><b>${esc(g.label)}</b> <span class="small dim">${esc(tip(g))}</span><div class="note">${esc(g.error || "Not enough data to simulate yet")}</div></div>`; continue; }
+    const s = SIMS[g.id] ? summarize(SIMS[g.id]) : g.summary;
+    const hurt = [...g.sides.home.players, ...g.sides.away.players].filter(p => pPlay(p) < 1).length;
+    const b2b = [g.sides.away, g.sides.home].filter(x => x.b2b).map(x => x.abbr);
+    html += `<a class="card game" href="#game-${g.id}">
+      <div class="row between small dim"><span>${esc(tip(g))}</span><span>Pace ${g.pace ?? "—"}${b2b.length ? ` · B2B: ${b2b.join(", ")}` : ""}</span></div>
+      <div class="row between" style="margin-top:10px">
+        <div class="row">${badge(g.away.abbr)}<div><div class="team">${esc(g.away.abbr)}</div><div class="small dim num">${pct(s.away_win)}</div></div></div>
+        <div class="small dim">@</div>
+        <div class="row" style="flex-direction:row-reverse;text-align:right">${badge(g.home.abbr)}<div><div class="team">${esc(g.home.abbr)}</div><div class="small dim num">${pct(s.home_win)}</div></div></div>
+      </div>
+      <div class="bar"><div style="width:${s.away_win*100}%;background:${teamColor(g.away.abbr)}"></div><div style="flex:1;background:${teamColor(g.home.abbr)}"></div></div>
+      <div class="row between small"><span class="dim">Spread <b style="color:var(--text)">${esc(g.home.abbr)} ${fmtLine(half(s.spread_home))}</b></span><span class="dim">Total <b style="color:var(--text)">${s.total.toFixed(1)}</b></span><span class="dim">${hurt ? `🩹 ${hurt} injured` : "Healthy"}</span></div>
+    </a>`;
+  }
+  return html + `<p class="note" style="text-align:center">Tap a game for player props and to build a parlay.</p>`;
+}
+
+function viewGame(id){
+  const g = gameById(id);
+  if (!g || !g.sides) return `<a class="back" href="#games">‹ Games</a><div class="empty">Game not available.</div>`;
+  const r = getSim(g), s = summarize(r), H = g.home.abbr, A = g.away.abbr;
+  const spr = half(s.spread_home), tot = hookLine(s.total);
+  let html = `<a class="back" href="#games">‹ Games</a>
+  <div class="card">
+    <div class="small dim">${esc(dayLabel(g))} · ${esc(tip(g))} · ${esc(g.venue)}</div>
+    <div class="row between" style="margin-top:12px">
+      <div class="row">${badge(A)}<div class="big num">${s.away_pts.toFixed(1)}</div></div>
+      <div class="dim small">projected</div>
+      <div class="row"><div class="big num">${s.home_pts.toFixed(1)}</div>${badge(H)}</div>
+    </div>
+    <div class="bar"><div style="width:${s.away_win*100}%;background:${teamColor(A)}"></div><div style="flex:1;background:${teamColor(H)}"></div></div>
+    <div class="row between small num"><span>${A} ${pct(s.away_win)} <span class="dim">(${american(s.away_win)})</span></span><span>${H} ${pct(s.home_win)} <span class="dim">(${american(s.home_win)})</span></span></div>
+    <div class="kpis"><div class="kpi"><b class="num">${H} ${fmtLine(spr)}</b><span>Fair spread</span></div><div class="kpi"><b class="num">${s.total.toFixed(1)}</b><span>Fair total</span></div><div class="kpi"><b class="num">${g.pace ?? "—"}</b><span>Pace (poss)</span></div></div>
+    ${[g.sides.away, g.sides.home].map(x => x.notes.map(n => `<div class="note">ℹ️ ${esc(x.abbr)}: ${esc(n)}</div>`).join("")).join("")}
+  </div>
+  <h2>Game legs</h2>
+  <div class="card"><div class="legbtns">
+    <button data-leg='${JSON.stringify({gameId:g.id,type:"ml",team:A})}'><b>${A} ML</b><span>${pct(s.away_win)} · fair ${american(s.away_win)}</span></button>
+    <button data-leg='${JSON.stringify({gameId:g.id,type:"ml",team:H})}'><b>${H} ML</b><span>${pct(s.home_win)} · fair ${american(s.home_win)}</span></button>
+    <button data-leg='${JSON.stringify({gameId:g.id,type:"spread",team:A,line:-spr})}'><b>${A} ${fmtLine(-spr)}</b><span>Spread (edit in slip)</span></button>
+    <button data-leg='${JSON.stringify({gameId:g.id,type:"spread",team:H,line:spr})}'><b>${H} ${fmtLine(spr)}</b><span>Spread (edit in slip)</span></button>
+    <button data-leg='${JSON.stringify({gameId:g.id,type:"total",side:"over",line:tot})}'><b>Over ${tot}</b><span>Game total</span></button>
+    <button data-leg='${JSON.stringify({gameId:g.id,type:"total",side:"under",line:tot})}'><b>Under ${tot}</b><span>Game total</span></button>
+  </div></div>
+  <h2>Player props</h2>
+  <div class="statchips">${["pts","reb","ast","fg3","pra","pr","pa","ra"].map(k => `<button data-propstat="${k}" class="${k===PROP_STAT?"on":""}">${SHORT[k]}</button>`).join("")}</div>`;
+  for (const [side, abbr] of [[g.sides.away, A], [g.sides.home, H]]){
+    html += `<div class="card"><div style="font-weight:700;margin-bottom:4px">${esc(abbr)} · ${LABEL[PROP_STAT]}</div>`;
+    const rows = side.players.map(p => ({p, d: dist(r, p.pid, PROP_STAT)})).filter(x => x.d.n && x.d.med >= MIN_SHOW[PROP_STAT]).sort((a,b) => b.d.med - a.d.med);
+    html += rows.map(({p, d}) => {
+      const line = hookLine(d.med), pp = pPlay(p);
+      const avg = COMBOS[PROP_STAT] ? COMBOS[PROP_STAT].reduce((a,k)=>a+p.season_avg[k],0).toFixed(1) : p.season_avg[PROP_STAT];
+      const tag = pp < 1 ? `<span class="pill ${pp <= .25 ? "o" : "q"}">${esc(p.status || "adjusted")} · ${Math.round(pp*100)}%</span>` : (p.note ? `<span class="pill">${esc(p.note)}</span>` : "");
+      return `<div class="prop" data-pid="${esc(p.pid)}" data-stat="${PROP_STAT}" data-gid="${g.id}">
+        <div class="row between" data-toggle>
+          <div><div class="name">${esc(p.name)} <span class="dim small">${esc(p.pos)} · ${p.minutes.toFixed(0)} min</span> ${tag}</div>
+            <div class="small dim num">avg ${avg} · range ${d.p10.toFixed(1)}–${d.p90.toFixed(1)}</div></div>
+          <div style="text-align:right"><div class="num" style="font-weight:700;font-size:17px">${d.med.toFixed(1)}</div><div class="tiny dim">fair line</div></div>
+        </div>
+        <div class="exp">
+          <div class="row"><div style="flex:1"><div class="tiny dim">Book line</div><input type="number" step="0.5" inputmode="decimal" value="${line}" data-line></div>
+          <div style="flex:1.3"><div class="tiny dim">&nbsp;</div><div class="small num" data-probs>Over ${pct(d.over(line))} · Under ${pct(1-d.over(line))}</div></div></div>
+          <div class="legbtns" style="margin-top:8px"><button class="primary" data-addprop="over">+ Over</button><button data-addprop="under">+ Under</button></div>
+          ${d.play < .995 ? `<div class="note">Plays in ${pct(d.play)} of sims; odds assume he suits up.</div>` : ""}
+        </div></div>`;
+    }).join("") || `<div class="dim small">No players project for this stat.</div>`;
+    html += `</div>`;
+  }
+  html += `<h2>Injuries & who plays</h2><div class="card"><div class="small dim" style="margin-bottom:6px">Change a status when news breaks; the game re-simulates and minutes and shots shift to teammates.</div>`;
+  for (const [side, abbr] of [[g.sides.away, A], [g.sides.home, H]]){
+    html += `<div style="margin-top:10px;font-weight:700">${esc(abbr)}</div>`;
+    html += side.players.map(p => {
+      const cur = pPlay(p), opts = [[1,"Active"],[.93,"Probable"],[.55,"Questionable"],[.2,"Doubtful"],[0,"Out"]];
+      if (!opts.some(o => Math.abs(o[0]-cur) < 1e-9)) opts.push([cur, `${Math.round(cur*100)}%`]);
+      return `<div class="who"><div><div>${esc(p.name)} <span class="dim small">${esc(p.pos)} · ${p.minutes.toFixed(0)} min</span></div><div class="tiny dim">${esc(p.status || "no injury listed")}${p.pid in OVERRIDES ? " · <b style='color:var(--warn)'>you changed this</b>" : ""}</div></div>
+        <select data-override="${esc(p.pid)}" data-gid="${g.id}">${opts.map(([v,l]) => `<option value="${v}" ${Math.abs(v-cur)<1e-9?"selected":""}>${l}</option>`).join("")}</select></div>`;
+    }).join("");
+    const others = side.injuries.filter(i => !/^active$/i.test(i.status) && !side.players.some(p => p.name === i.name));
+    if (others.length) html += `<details style="margin-top:8px"><summary>Full ${esc(abbr)} injury report (${others.length} more)</summary>${others.map(i => `<div class="small" style="padding:4px 0"><b>${esc(i.pos)}</b> ${esc(i.name)} — <span class="${/out/i.test(i.status) ? "ev-neg" : ""}">${esc(i.status)}</span> <span class="dim">${esc(i.detail)}</span></div>`).join("")}</details>`;
+  }
+  return html + `</div>`;
+}
+
+function evHtml(p, dec){ const e = p*dec - 1; return `<div class="tiny dim">EXPECTED VALUE</div><div class="big num ${e>=0?"ev-pos":"ev-neg"}">${e>=0?"+":""}${(e*100).toFixed(1)}%</div>`; }
+function viewSlip(){
+  if (!SLIP.length) return `<div class="empty"><div style="font-size:40px">🧾</div><p>Your NBA parlay is empty.</p><p class="small">Open a game and tap a moneyline, spread, total or player prop. Legs from the same game are priced together, so correlation is included.</p><a class="btn" href="#games">Browse games</a></div>`;
+  const ev = evaluateSlip(), dec = amToDec(BOOK_ODDS);
+  let html = `<div class="card">
+    <div class="row between"><div><div class="tiny dim">MODEL PROBABILITY</div><div class="big num">${pct(ev.joint)}</div></div>
+    <div style="text-align:right"><div class="tiny dim">FAIR ODDS</div><div class="big num">${american(ev.joint)}</div></div></div>
+    <div class="small dim num" style="margin-top:6px">If legs were independent: ${pct(ev.indep)} · correlation ×${ev.indep && Number.isFinite(ev.joint) ? (ev.joint/ev.indep).toFixed(2) : "—"}</div>
+    <div class="row" style="margin-top:12px;align-items:flex-end">
+      <div style="flex:1"><div class="tiny dim">Your book's odds (American)</div><input type="number" inputmode="numeric" placeholder="e.g. 450" value="${esc(BOOK_ODDS)}" id="bookodds"></div>
+      <div style="flex:1;text-align:right" id="evbox">${dec && Number.isFinite(ev.joint) ? evHtml(ev.joint, dec) : `<div class="small dim">Enter odds to see EV</div>`}</div>
+    </div>
+    ${ev.notes.map(n => `<div class="note">⚠️ ${esc(n)}</div>`).join("")}
+  </div>`;
+  html += SLIP.map((L, idx) => {
+    const g = gameById(L.gameId); if (!g) return "";
+    const p = ev.singles[idx];
+    const lineInput = L.type==="ml" ? "" : `<div style="width:92px"><input type="number" step="0.5" inputmode="decimal" value="${L.line}" data-legline="${idx}"></div>`;
+    const ou = ["total","tt","prop"].includes(L.type) ? `<div class="seg" style="width:120px"><button class="${L.side==="over"?"on":""}" data-legside="${idx}" data-v="over">Over</button><button class="${L.side==="under"?"on":""}" data-legside="${idx}" data-v="under">Under</button></div>` : "";
+    return `<div class="card"><div class="row between"><div><div style="font-weight:700">${esc(legLabel(L,g))}</div><div class="tiny dim">${esc(g.label)} · ${esc(tip(g))}</div></div><button class="ghost" data-rm="${idx}" aria-label="Remove">✕</button></div>
+      <div class="row between" style="margin-top:8px"><div class="num"><b>${pct(p)}</b> <span class="dim small">fair ${american(p)}</span></div><div class="row">${ou}${lineInput}</div></div></div>`;
+  }).join("");
+  return html + `<button class="ghost" style="width:100%;margin-bottom:12px" id="clearslip">Clear parlay</button>
+    <p class="note">Same-game legs share one set of simulations: a fast, high-scoring game lifts every player's numbers together, and blowouts cut starters' minutes. Legs in different games are treated as independent.</p>`;
+}
+
+function viewRankings(){
+  const cols = [["abbr","Team"],["net","Net"],["rk_net","Net rk"],["rk_off","Off"],["rk_def","Def"],["pace","Pace"],["l10_net","L10"]];
+  const rows = DATA.rankings.slice().sort((a,b) => { const x=a[RANK_SORT], y=b[RANK_SORT];
+    if (RANK_SORT.startsWith("rk_")) return x-y; if (RANK_SORT==="abbr") return String(x).localeCompare(y); return y-x; });
+  const rk = v => { const h = 120 - (v-1)/29*120; return `<span class="rk" style="background:hsl(${h} 60% 22%);color:hsl(${h} 80% 70%)">${v}</span>`; };
+  return `<div class="card" style="padding:8px 10px;overflow-x:auto"><table><thead><tr>${cols.map(([k,l]) => `<th data-sort="${k}" class="${k===RANK_SORT?"on":""}">${l}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r => `<tr>${cols.map(([k]) => `<td class="num">${k==="abbr" ? `<b>${esc(r[k])}</b>` : k.startsWith("rk_") ? rk(r[k]) : (k.includes("net") && r[k] > 0 ? "+" : "") + Number(r[k]).toFixed(1)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="note">Net = points scored minus allowed per 100 possessions, adjusted for opponents. Off/Def ranks: 1 = best. Pace = possessions per game. L10 = net rating over the last 10 games.</p>`;
+}
+
+// ============================================================ router & events
+function route(){
+  const h = (location.hash || "#games").slice(1);
+  document.querySelectorAll(".tabs a").forEach(a => a.classList.toggle("on", a.dataset.tab === (h.startsWith("game-") ? "games" : h)));
+  const app = $("#app"); if (!DATA) return;
+  const later = (msg, fn) => { app.innerHTML = `<div class="empty">${msg}</div>`; setTimeout(() => { app.innerHTML = fn(); }, 30); };
+  if (h.startsWith("game-")){ const g = gameById(h.slice(5)); if (g && g.sides && !SIMS[g.id]) later(`Simulating ${N_SIMS.toLocaleString()} games…`, () => viewGame(g.id)); else app.innerHTML = viewGame(h.slice(5)); }
+  else if (h==="slip"){ const need = [...new Set(SLIP.map(L => L.gameId))].filter(id => !SIMS[id]); if (need.length) later("Pricing your parlay…", viewSlip); else app.innerHTML = viewSlip(); }
+  else if (h==="rankings") app.innerHTML = viewRankings();
+  else app.innerHTML = viewGames();
+  if (!window._sameView) window.scrollTo(0,0);
+  window._sameView = false;
+}
+window.addEventListener("hashchange", route);
+function rerender(){ window._sameView = true; const y = window.scrollY; route(); window.scrollTo(0,y); }
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-leg],[data-toggle],[data-addprop],[data-rm],[data-legside],#clearslip,th[data-sort],[data-propstat]");
+  if (!t) return;
+  if (t.dataset.leg){ addLeg(JSON.parse(t.dataset.leg)); return; }
+  if (t.dataset.propstat){ PROP_STAT = t.dataset.propstat; store.set("nbasim.propstat", PROP_STAT); rerender(); return; }
+  if (t.hasAttribute("data-toggle")){ t.closest(".prop").classList.toggle("open"); return; }
+  if (t.dataset.addprop){ const box = t.closest(".prop"), g = gameById(box.dataset.gid), r = getSim(g), pid = box.dataset.pid;
+    addLeg({gameId:g.id, type:"prop", pid, name:r.players[pid].p.name, stat:box.dataset.stat, side:t.dataset.addprop, line:Number(box.querySelector("[data-line]").value)}); return; }
+  if (t.dataset.rm !== undefined){ SLIP.splice(Number(t.dataset.rm),1); saveSlip(); rerender(); return; }
+  if (t.dataset.legside !== undefined){ SLIP[Number(t.dataset.legside)].side = t.dataset.v; saveSlip(); rerender(); return; }
+  if (t.id==="clearslip"){ SLIP=[]; saveSlip(); rerender(); return; }
+  if (t.dataset.sort){ RANK_SORT = t.dataset.sort; rerender(); }
+});
+document.addEventListener("input", e => {
+  const t = e.target;
+  if (t.matches("[data-line]")){ const box = t.closest(".prop"), d = dist(getSim(gameById(box.dataset.gid)), box.dataset.pid, box.dataset.stat), o = d.over(Number(t.value));
+    box.querySelector("[data-probs]").textContent = `Over ${pct(o)} · Under ${pct(1-o)}`; }
+  if (t.id==="bookodds"){ BOOK_ODDS = t.value; store.set("nbasim.book", BOOK_ODDS); const dec = amToDec(BOOK_ODDS), ev = evaluateSlip();
+    $("#evbox").innerHTML = dec && Number.isFinite(ev.joint) ? evHtml(ev.joint, dec) : `<div class="small dim">Enter odds to see EV</div>`; }
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.matches("[data-legline]")){ SLIP[Number(t.dataset.legline)].line = Number(t.value); saveSlip(); rerender(); }
+  if (t.matches("[data-override]")){
+    const g = gameById(t.dataset.gid), pid = t.dataset.override, v = Number(t.value);
+    const orig = [...g.sides.home.players, ...g.sides.away.players].find(p => p.pid===pid).p_play;
+    if (Math.abs(orig-v) < 1e-9) delete OVERRIDES[pid]; else OVERRIDES[pid] = v;
+    store.set("nbasim.overrides", OVERRIDES); delete SIMS[g.id]; rerender(); toast("Re-simulated");
+  }
+});
+
+fetch("nba.json?t=" + Date.now(), {cache:"no-store"})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => {
+    DATA = d; CFG = d.config;
+    $("#wk").textContent = new Date(d.today + "T12:00:00").toLocaleDateString([], {month:"short", day:"numeric"}).toUpperCase();
+    $("#updated").textContent = `${d.games.length} games today & tomorrow · data updated ${ago(d.generated)}`;
+    SLIP = SLIP.filter(L => gameById(L.gameId)); saveSlip(); route();
+  })
+  .catch(err => { $("#app").innerHTML = `<div class="empty">Couldn't load NBA data (${esc(err.message)}).<br>If this is new, the first data refresh may still be running.</div>`; });
+updateCount();
+</script>
+</body>
+</html>
