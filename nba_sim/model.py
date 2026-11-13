@@ -112,7 +112,10 @@ def build_side(team_id, opp_id, abbr, teams, players, injuries, roster, game_pac
             status = inj.status if inj else ((roster or {}).get(pid, {}).get("injury_status", "") or "")
             p = play_probability(status)
             if r.missed_recent and p == 0:
-                notes.append(f"{r['name']} out (absence already in recent numbers)")
+                # team ratings still include the games he played, so take off that share of his scoring
+                share = r.pts_avg / max(T.ppg, 1) * min(r.gp / max(T.gp, 1), 1)
+                pts_mu *= 1 - config.STAR_LOSS_PTS * share
+                notes.append(f"{r['name']} out (−{pts_mu * config.STAR_LOSS_PTS * share / (1 - config.STAR_LOSS_PTS * share):.1f} pts for games the ratings still count him in)")
                 continue
         minutes = r.min_w if not r.missed_recent else r.min_avg
         if minutes < config.MIN_MINUTES and r.min_avg < config.MIN_MINUTES + 4:
