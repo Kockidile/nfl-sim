@@ -65,9 +65,12 @@ def _shrink(v, gp, lg):
     return w * v + (1 - w) * lg
 
 
+SCHEDULED: dict[str, set] = {}   # team_id -> ET days with a scheduled (not yet final) game
+
+
 def _b2b(team_id, teams, day: date) -> bool:
-    days = teams.attrs.get("days", {}).get(team_id, [])
-    return (day - timedelta(days=1)).isoformat() in days
+    prev = (day - timedelta(days=1)).isoformat()
+    return prev in teams.attrs.get("days", {}).get(team_id, []) or prev in SCHEDULED.get(team_id, set())
 
 
 def build_side(team_id, opp_id, abbr, teams, players, injuries, roster, game_pace, hfa, day,

@@ -18,7 +18,7 @@ STALE_GAMES = 3            # missed the team's last N games -> injured ones are 
 MIN_MINUTES = 10           # rotation threshold (recent minutes per game)
 MAX_PLAYERS = 11
 
-SHRINK_GAMES = 6           # team-rating regression toward league average
+SHRINK_GAMES = 12          # team-rating regression toward league average (early-season ratings are noisy)
 HOME_COURT_PTS = 1.4       # added to home, subtracted from away (≈2.8-pt spread)
 B2B_PTS = 1.5              # second night of a back-to-back
 MATCHUP_WEIGHT = 0.5       # how much of an opponent's stat-allowed factor to apply (0..1)

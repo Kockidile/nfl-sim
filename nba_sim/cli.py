@@ -52,7 +52,11 @@ def cmd_export(args):
                "RETAIN", "STAR_LOSS_PTS", "TEAM_FORM_SD", "PACE_SD", "SCORE_NOISE_SD", "PLAYER_FORM_BETA",
                "BLOWOUT_START", "BLOWOUT_PER_PT", "BLOWOUT_FLOOR", "STARTER_MIN")},
            "games": [], "rankings": []}
-    for g in _slate(today):
+    slate = _slate(today)
+    for g in slate:
+        for t in (g.home.id, g.away.id):
+            model.SCHEDULED.setdefault(t, set()).add(g.day.isoformat())
+    for g in slate:
         item = {"id": g.id, "label": g.label, "date": g.date, "day": g.day.isoformat(), "venue": g.venue,
                 "city": g.city, "neutral": g.neutral, "completed": g.completed,
                 "home": {"id": g.home.id, "abbr": g.home.abbr, "name": g.home.name, "score": g.home.score},
@@ -84,7 +88,11 @@ def cmd_export(args):
 def cmd_slate(args):
     today, data, tt, pt = _context(not args.quiet)
     injuries = espn.get_injuries(espn.get_teams())
-    for g in _slate(today):
+    slate = _slate(today)
+    for g in slate:
+        for t in (g.home.id, g.away.id):
+            model.SCHEDULED.setdefault(t, set()).add(g.day.isoformat())
+    for g in slate:
         if g.completed or g.home.id not in tt.index or g.away.id not in tt.index:
             continue
         m = model.build_matchup(g, tt, pt, injuries,
