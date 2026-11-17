@@ -13,6 +13,20 @@ SURF_WEIGHT = 0.5          # blend of surface Elo vs overall Elo when the surfac
 LEVEL_K = {"G": 1.1, "M": 1.05, "F": 1.05, "A": 1.0, "T": 1.0, "D": 0.9, "C": 0.9, "Q": 0.85, "S": 0.8, "15": 0.8, "25": 0.8}
 
 
+TOUR_LEVELS = {"G", "M", "A", "F", "D", "P", "PM", "I", "O", "T", "T1", "T2", "T3", "T4", "T5", "KXATPMATCH", "KXWTAMATCH",
+               "KXUNITEDCUPMATCH", "KXDAVISCUPMATCH", "KXLAVERCUPMATCH"}
+
+
+def start_rating(level) -> float:
+    """New players start near the level they first appear at, so ITF win streaks don't inflate them."""
+    lv = str(level)
+    if lv in TOUR_LEVELS:
+        return 1550.0
+    if lv == "C" or "CHALLENGER" in lv:
+        return 1400.0
+    return 1250.0   # futures / ITF / unknown low level
+
+
 def k_factor(n: int) -> float:
     return 250.0 / (n + 5) ** 0.4          # FiveThirtyEight-style: newcomers move faster
 
@@ -52,10 +66,11 @@ class Ratings:
         self.p: dict[tuple[str, str], Player] = {}
         self.log = []   # pre-match probabilities for backtests
 
-    def get(self, key, name, tour) -> Player:
+    def get(self, key, name, tour, level="") -> Player:
         k = (tour, key)
         if k not in self.p:
-            self.p[k] = Player(key, name, tour)
+            r0 = start_rating(level)
+            self.p[k] = Player(key, name, tour, elo=r0, s_elo={s: r0 for s in SURFACES})
         return self.p[k]
 
     def find(self, key, tour=None) -> Player | None:
@@ -68,7 +83,7 @@ class Ratings:
 
     def update(self, m) -> None:
         tour = m.tour if m.tour in ("M", "W") else ("W" if self.find(m.w_key, "W") and not self.find(m.w_key, "M") else "M")
-        w, l = self.get(m.w_key, m.w_name, tour), self.get(m.l_key, m.l_name, tour)
+        w, l = self.get(m.w_key, m.w_name, tour, m.level), self.get(m.l_key, m.l_name, tour, m.level)
         surf = m.surface if m.surface in SURFACES else None
         p = expect(w.rating(surf), l.rating(surf))
         self.log.append((m.date, tour, m.source, m.level, w.key, l.key, p, w.n, l.n))

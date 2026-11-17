@@ -153,7 +153,7 @@ function formHtml(f){ return `<span class="form">${[...(f||"")].slice(-10).map(c
 function card(m){
   const [A,B] = m.players, bs = bestSide(m);
   const pa = m.model ? m.model.p_a : NaN, mk = m.market.p_a;
-  const edgeTag = bs && bs.edge >= .03 ? `<span class="edge pos">+${(bs.edge*100).toFixed(1)} on ${esc(last(m.players[bs.i]))}</span>` : "";
+  const edgeTag = bs && bs.edge >= .03 && m.confidence !== "low" ? `<span class="edge pos">+${(bs.edge*100).toFixed(1)} on ${esc(last(m.players[bs.i]))}</span>` : "";
   return `<a class="card game" href="#m-${encodeURIComponent(m.event)}">
     <div class="row between small dim"><span>${esc(m.level)} · ${esc(m.surface || "")}</span><span>${esc(when(m.start))}</span></div>
     <div class="vs" style="margin-top:10px">

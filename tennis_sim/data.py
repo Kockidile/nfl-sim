@@ -122,7 +122,7 @@ def load_archive() -> pd.DataFrame:
     a["date"] = a.date + pd.to_timedelta(a["round"].map(order).fillna(6), unit="D") * 0.5
     out = pd.DataFrame({
         "date": a.date, "tour": a.tour, "source": "archive", "level": a.tourney_level.astype(str),
-        "tourney": a.tourney_name.astype(str), "surface": a.surface.fillna("Hard").replace({"Carpet": "Hard"}),
+        "tourney": a.tourney_name.astype(str), "surface": a.surface.fillna("Hard").astype(str).str.title().replace({"Carpet": "Hard"}),
         "best_of": a.best_of.fillna(3).astype(int), "w_name": a.winner_name, "l_name": a.loser_name,
         "score": a.score.astype(str), "retired": a.retired, "minutes": pd.to_numeric(a.minutes, errors="coerce"),
         "w_rank": pd.to_numeric(a.winner_rank, errors="coerce"), "l_rank": pd.to_numeric(a.loser_rank, errors="coerce"),
