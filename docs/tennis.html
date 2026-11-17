@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sim">
+<meta name="theme-color" content="#0a0f1a">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Tennis Sim</title>
+<style>
+:root{
+  --bg:#0a0f1a; --card:#121a2b; --card2:#18223a; --line:#24304a; --text:#e8edf7; --dim:#8b97b0;
+  --accent:#3ddc84; --accent-d:#1f8f52; --warn:#f5b742; --bad:#ff5d5d; --blue:#5aa9ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(76px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+header{position:sticky;top:0;z-index:5;background:rgba(10,15,26,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:20px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+header h1 .wk{font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:2px 7px}
+header .sub{color:var(--dim);font-size:12px;margin-top:2px}
+main{padding:12px 12px 0;max-width:720px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.game{display:block;color:inherit;text-decoration:none}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.team{font-weight:700;font-size:17px;min-width:44px}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;font-weight:800;font-size:14px;background:var(--card2);border:1px solid var(--line)}
+.dim{color:var(--dim)} .small{font-size:12px} .tiny{font-size:11px}
+.bar{height:6px;border-radius:4px;background:var(--card2);overflow:hidden;display:flex;margin:10px 0 8px}
+.bar>div{height:100%}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--dim);border:1px solid var(--line)}
+.pill.q{color:var(--warn);border-color:#5b4a1f}.pill.o{color:var(--bad);border-color:#5c2a2a}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.kpi{background:var(--card2);border-radius:12px;padding:8px 10px}
+.kpi b{display:block;font-size:17px}
+.kpi span{font-size:11px;color:var(--dim)}
+h2{font-size:15px;margin:18px 4px 8px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+button,.btn{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:#04210f;border-color:var(--accent);font-weight:700}
+button.ghost{background:transparent}
+button:active{transform:scale(.98)}
+.legbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.legbtns button{text-align:left}
+.legbtns button b{display:block}
+.legbtns button span{font-size:12px;color:var(--dim)}
+.prop{border-top:1px solid var(--line);padding:10px 2px}
+.prop:first-child{border-top:none}
+.prop .name{font-weight:600}
+.prop .exp{margin-top:10px;display:none}
+.prop.open .exp{display:block}
+.num{font-variant-numeric:tabular-nums}
+input[type=number],select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;background:transparent;padding:8px 4px;font-size:13px}
+.seg button.on{background:var(--accent);color:#04210f;font-weight:700}
+.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;display:flex;background:rgba(10,15,26,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.tabs a{flex:1;text-align:center;color:var(--dim);text-decoration:none;font-size:11px;padding:6px 0;border-radius:10px;position:relative}
+.tabs a svg{display:block;margin:0 auto 2px;width:22px;height:22px}
+.tabs a.on{color:var(--accent)}
+.count{position:absolute;top:0;left:55%;background:var(--accent);color:#04210f;font-weight:800;font-size:10px;border-radius:999px;padding:1px 6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600;font-size:11px;cursor:pointer;white-space:nowrap}
+th.on{color:var(--accent)}
+.rk{display:inline-block;min-width:26px;border-radius:6px;padding:1px 4px;text-align:center;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--accent);color:#04210f;font-weight:700;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+.big{font-size:30px;font-weight:800;letter-spacing:-.5px}
+.ev-pos{color:var(--accent)} .ev-neg{color:var(--bad)}
+.back{color:var(--accent);text-decoration:none;font-weight:600;display:inline-block;margin:2px 4px 10px}
+.note{font-size:12px;color:var(--dim);margin-top:6px}
+.empty{text-align:center;color:var(--dim);padding:40px 16px}
+.who{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.who:first-of-type{border-top:none}
+.who select{padding:6px 8px;font-size:13px}
+details summary{cursor:pointer;color:var(--blue);font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+.sport{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sport a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:700;padding:6px 12px}
+.sport a.on{background:var(--accent);color:#04210f}
+
+:root{--accent:#c8f03c;--accent-d:#8fb21c}
+header h1 .wk,button.primary,.seg button.on,.count,.toast,.sport a.on{color:#1d2600}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:2px}
+.chips button{padding:6px 12px;border-radius:999px;font-size:13px;white-space:nowrap}
+.chips button.on{background:var(--accent);border-color:var(--accent);color:#1d2600;font-weight:700}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.pname{font-weight:700;font-size:16px;line-height:1.2}
+.pmeta{font-size:12px;color:var(--dim)}
+.edge{display:inline-block;font-weight:800;font-size:12px;padding:2px 8px;border-radius:999px}
+.edge.pos{background:rgba(61,220,132,.15);color:var(--accent)}
+.edge.neg{background:rgba(255,93,93,.12);color:var(--bad)}
+.cmp{display:grid;grid-template-columns:1fr 92px 1fr;gap:6px;font-size:13px;padding:7px 0;border-top:1px solid var(--line);align-items:center}
+.cmp div:nth-child(2){text-align:center;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.cmp div:nth-child(3){text-align:right}
+.cmp b.better{color:var(--accent)}
+.form span{display:inline-block;width:15px;height:15px;border-radius:4px;margin-right:2px;font-size:9px;font-weight:800;text-align:center;line-height:15px}
+.form .W{background:rgba(61,220,132,.25);color:#3ddc84}.form .L{background:rgba(255,93,93,.2);color:#ff5d5d}
+.hbar{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+.hbar .track{flex:1;height:8px;background:var(--card2);border-radius:5px;overflow:hidden}
+.hbar .fill{height:100%;background:var(--accent)}
+.hbar .lbl{width:48px}.hbar .val{width:48px;text-align:right}
+.conf{font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;border:1px solid var(--line)}
+.conf.high{color:#3ddc84}.conf.medium{color:var(--warn)}.conf.low{color:var(--bad)}
+</style>
+</head>
+<body>
+<header>
+  <div class="row between">
+    <h1>Tennis Sim <span class="wk" id="wk">KALSHI</span></h1>
+    <div class="sport"><a href="index.html">NFL</a><a href="nba.html">NBA</a><a class="on" href="tennis.html">🎾</a></div>
+  </div>
+  <div class="sub" id="updated">Loading data…</div>
+</header>
+<main id="app"><div class="empty">Loading…</div></main>
+<nav class="tabs">
+  <a href="#matches" data-tab="matches"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M5 5.5c4 3 4 10 0 13M19 5.5c-4 3-4 10 0 13"/></svg>Matches</a>
+  <a href="#edges" data-tab="edges"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Edges</a>
+  <a href="#slip" data-tab="slip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Parlay<span class="count" id="slipcount" hidden>0</span></a>
+  <a href="#model" data-tab="model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Model</a>
+</nav>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+let DATA = null, LEVEL = "All";
+const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+let SLIP = store.get("tensim.slip", []);
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = (p,d=1) => Number.isFinite(p) ? (p*100).toFixed(d) + "%" : "—";
+const cents = p => Number.isFinite(p) ? Math.round(p*100) + "¢" : "—";
+function american(p){ if (!Number.isFinite(p)) return "—"; p=Math.min(Math.max(p,1e-4),1-1e-4); return p>=.5 ? String(Math.round(-100*p/(1-p))) : "+"+Math.round(100*(1-p)/p); }
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1400); }
+function when(iso){ if(!iso) return "TBD"; const d=new Date(iso); return isNaN(d)?iso:d.toLocaleString([], {weekday:"short", month:"short", day:"numeric", hour:"numeric", minute:"2-digit"}); }
+function ago(iso){ const m=Math.round((Date.now()-new Date(iso))/60000); return m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"; }
+const last = n => String(n||"").split(" ").slice(-1)[0];
+const saveSlip = () => { store.set("tensim.slip", SLIP); const c=$("#slipcount"); c.textContent=SLIP.length; c.hidden=!SLIP.length; };
+const byId = id => DATA.matches.find(m => m.event === id);
+const upcoming = () => DATA.matches.filter(m => !m.start || new Date(m.start) > Date.now() - 3*3600e3);
+// best side to back: the larger model-minus-market edge
+function bestSide(m){
+  if (!m.model || !Number.isFinite(m.market.p_a)) return null;
+  const ea = m.model.p_a - m.market.p_a;
+  return ea >= 0 ? {i:0, edge:ea, p:m.model.p_a, mkt:m.market.p_a, price:m.market.a.ask} : {i:1, edge:-ea, p:1-m.model.p_a, mkt:1-m.market.p_a, price:m.market.b.ask};
+}
+function formHtml(f){ return `<span class="form">${[...(f||"")].slice(-10).map(c=>`<span class="${c}">${c}</span>`).join("")}</span>`; }
+
+function card(m){
+  const [A,B] = m.players, bs = bestSide(m);
+  const pa = m.model ? m.model.p_a : NaN, mk = m.market.p_a;
+  const edgeTag = bs && bs.edge >= .03 ? `<span class="edge pos">+${(bs.edge*100).toFixed(1)} on ${esc(last(m.players[bs.i]))}</span>` : "";
+  return `<a class="card game" href="#m-${encodeURIComponent(m.event)}">
+    <div class="row between small dim"><span>${esc(m.level)} · ${esc(m.surface || "")}</span><span>${esc(when(m.start))}</span></div>
+    <div class="vs" style="margin-top:10px">
+      <div><div class="pname">${esc(A)}</div><div class="pmeta num">${m.a ? `#${m.a.rank ? Math.round(m.a.rank) : "—"} · ${m.a.last10}` : "no data"}</div></div>
+      <div class="dim small">vs</div>
+      <div style="text-align:right"><div class="pname">${esc(B)}</div><div class="pmeta num">${m.b ? `#${m.b.rank ? Math.round(m.b.rank) : "—"} · ${m.b.last10}` : "no data"}</div></div>
+    </div>
+    ${m.model ? `<div class="bar"><div style="width:${pa*100}%;background:var(--accent)"></div><div style="flex:1;background:#3a4560"></div></div>` : `<div class="bar"></div>`}
+    <div class="row between small num"><span>Model <b>${pct(pa,0)}</b> · Kalshi <b>${pct(mk,0)}</b></span>${edgeTag || (m.confidence ? `<span class="conf ${m.confidence}">${m.confidence}</span>` : `<span class="dim">${m.missing ? "player not in data" : ""}</span>`)}</div>
+  </a>`;
+}
+
+function viewMatches(edgesOnly){
+  let ms = upcoming();
+  if (!ms.length) return `<div class="empty"><div style="font-size:40px">🎾</div><p>No open Kalshi tennis matches right now.</p><p class="small">The pro tour is in its off-season until late December. Challenger and ITF events still run some weeks.</p></div>`;
+  const levels = ["All", ...new Set(ms.map(m => m.level))];
+  if (!levels.includes(LEVEL)) LEVEL = "All";
+  if (LEVEL !== "All") ms = ms.filter(m => m.level === LEVEL);
+  if (edgesOnly) ms = ms.filter(m => { const b = bestSide(m); return b && b.edge >= .03 && m.confidence !== "low"; }).sort((x,y) => bestSide(y).edge - bestSide(x).edge);
+  let html = `<div class="chips">${levels.map(l => `<button data-level="${esc(l)}" class="${l===LEVEL?"on":""}">${esc(l)}</button>`).join("")}</div>`;
+  if (edgesOnly) html += `<p class="note" style="margin:0 4px 10px">Matches where the model's win % beats Kalshi's price by 3+ points, excluding low-confidence data. Sorted by edge.</p>`;
+  return html + (ms.map(card).join("") || `<div class="empty">Nothing here right now.</div>`);
+}
+
+function cmpRow(label, a, b, better){ // better: 1 = higher is better, -1 lower, 0 none
+  const na = parseFloat(a), nb = parseFloat(b);
+  const ca = better && Number.isFinite(na) && Number.isFinite(nb) && (better > 0 ? na > nb : na < nb) ? "better" : "";
+  const cb = better && Number.isFinite(na) && Number.isFinite(nb) && (better > 0 ? nb > na : nb < na) ? "better" : "";
+  return `<div class="cmp"><div><b class="${ca}">${a ?? "—"}</b></div><div>${label}</div><div><b class="${cb}">${b ?? "—"}</b></div></div>`;
+}
+function viewMatch(id){
+  const m = byId(id);
+  if (!m) return `<a class="back" href="#matches">‹ Matches</a><div class="empty">Match not found.</div>`;
+  const [A,B] = m.players;
+  let html = `<a class="back" href="#matches">‹ Matches</a><div class="card">
+    <div class="small dim">${esc(m.level)} · ${esc(m.tourney || "")} · ${esc(m.surface)} · best of ${m.best_of}</div>
+    <div class="small dim">${esc(when(m.start))}</div>`;
+  if (!m.model){
+    return html + `<div class="note" style="margin-top:10px">⚠️ Can't model this match: ${esc((m.missing||[]).join(", ") || m.error || "missing data")} not found in the match history. Kalshi: ${esc(A)} ${pct(m.market.p_a,0)}.</div></div>`;
+  }
+  const md = m.model, mk = m.market;
+  html += `<div class="vs" style="margin-top:12px">
+      <div><div class="pname">${esc(A)}</div><div class="big num">${pct(md.p_a,0)}</div></div><div class="dim small">vs</div>
+      <div style="text-align:right"><div class="pname">${esc(B)}</div><div class="big num">${pct(1-md.p_a,0)}</div></div></div>
+    <div class="bar"><div style="width:${md.p_a*100}%;background:var(--accent)"></div><div style="flex:1;background:#3a4560"></div></div>
+    <div class="kpis">
+      <div class="kpi"><b class="num">${pct(mk.p_a,0)}</b><span>Kalshi ${esc(last(A))}</span></div>
+      <div class="kpi"><b class="num ${m.edge_a>=0?"ev-pos":"ev-neg"}">${Number.isFinite(m.edge_a) ? (m.edge_a>=0?"+":"") + (m.edge_a*100).toFixed(1) : "—"}</b><span>Edge on ${esc(last(A))}</span></div>
+      <div class="kpi"><b><span class="conf ${m.confidence}">${m.confidence}</span></b><span>Data confidence</span></div>
+    </div>
+    <div class="legbtns" style="margin-top:12px">
+      <button data-add="${esc(m.event)}" data-i="0"><b>+ ${esc(last(A))}</b><span>model ${pct(md.p_a,0)} · ask ${cents(mk.a.ask)}</span></button>
+      <button data-add="${esc(m.event)}" data-i="1"><b>+ ${esc(last(B))}</b><span>model ${pct(1-md.p_a,0)} · ask ${cents(mk.b.ask)}</span></button>
+    </div>
+    ${m.notes.map(n => `<div class="note">⚠️ ${esc(n)}</div>`).join("")}
+  </div>`;
+  const a = m.a, b = m.b, sa = a.serve || {}, sb = b.serve || {};
+  html += `<h2>Head to head</h2><div class="card">
+    <div class="cmp" style="border-top:none"><div><b>${esc(last(A))}</b></div><div></div><div><b>${esc(last(B))}</b></div></div>
+    ${cmpRow("Rank", a.rank ? Math.round(a.rank) : null, b.rank ? Math.round(b.rank) : null, -1)}
+    ${cmpRow("Rating", a.rating, b.rating, 1)}
+    ${cmpRow(`${esc(m.surface)} rating`, a.surf_elo, b.surf_elo, 1)}
+    ${cmpRow("Last 10", a.last10, b.last10, 0)}
+    <div class="cmp"><div>${formHtml(a.form)}</div><div>Form</div><div>${formHtml(b.form)}</div></div>
+    ${cmpRow(`${esc(m.surface)} (12 mo)`, a.surface_record, b.surface_record, 0)}
+    ${cmpRow("Serve pts won", sa.spw ? pct(sa.spw) : null, sb.spw ? pct(sb.spw) : null, 1)}
+    ${cmpRow("Return pts won", sa.rpw ? pct(sa.rpw) : null, sb.rpw ? pct(sb.rpw) : null, 1)}
+    ${cmpRow("Hold %", sa.hold ? pct(sa.hold,0) : null, sb.hold ? pct(sb.hold,0) : null, 1)}
+    ${cmpRow("Break %", sa.brk ? pct(sa.brk,0) : null, sb.brk ? pct(sb.brk,0) : null, 1)}
+    ${cmpRow("Days since match", a.days_rest, b.days_rest, 0)}
+    ${cmpRow("Matches last 7d", a.played_7d, b.played_7d, -1)}
+    ${cmpRow("H2H", m.h2h.split("-")[0], m.h2h.split("-")[1], 1)}
+    <div class="note">Serve/return stats are from the last 12 months of the archive (through ${esc(DATA.archive_end)}). Ratings include results up to today.</div>
+  </div>`;
+  html += `<h2>How the match plays out</h2><div class="card">
+    <div class="small dim" style="margin-bottom:6px">Set score (${esc(last(A))} first)</div>
+    ${Object.entries(md.set_scores).map(([k,v]) => `<div class="hbar"><span class="lbl num">${k}</span><div class="track"><div class="fill" style="width:${v*100}%"></div></div><span class="val num">${pct(v,0)}</span></div>`).join("")}
+    <div class="kpis" style="margin-top:10px">
+      <div class="kpi"><b class="num">${pct(md.set1_a,0)}</b><span>${esc(last(A))} wins set 1</span></div>
+      <div class="kpi"><b class="num">${pct(md.straight_sets,0)}</b><span>Straight sets</span></div>
+      <div class="kpi"><b class="num">${md.games_mean}</b><span>Avg total games</span></div>
+    </div>
+    <div class="small dim" style="margin:12px 0 4px">Total games — chance of going over</div>
+    <table><tbody>${Object.entries(md.games_over).map(([k,v]) => `<tr><td>Over ${k}</td><td class="num">${pct(v,0)}</td><td class="num dim">${american(v)}</td><td class="num dim">Under ${pct(1-v,0)}</td></tr>`).join("")}</tbody></table>
+    <div class="note">Hold % used: ${esc(last(A))} ${pct(md.hold_a,0)}, ${esc(last(B))} ${pct(md.hold_b,0)}.</div>
+  </div>`;
+  for (const [nm, p] of [[A,a],[B,b]]){
+    html += `<h2>${esc(nm)} — recent</h2><div class="card">${p.recent.map(r => `<div class="row between small" style="padding:4px 0;border-top:1px solid var(--line)"><span>${r.won?"✅":"❌"} ${esc(r.opp)}</span><span class="dim">${esc(r.score || "")} · ${esc(r.date)}</span></div>`).join("") || `<div class="dim small">No recent results.</div>`}</div>`;
+  }
+  return html;
+}
+
+function viewSlip(){
+  SLIP = SLIP.filter(L => byId(L.event) && byId(L.event).model);
+  if (!SLIP.length) return `<div class="empty"><div style="font-size:40px">🧾</div><p>Your tennis parlay is empty.</p><p class="small">Open a match and tap a player to add him or her. Different matches are independent, so the parlay chance is the product of the legs.</p></div>`;
+  let joint = 1, mkt = 1, cost = 1;
+  const rows = SLIP.map((L, idx) => {
+    const m = byId(L.event), p = L.i === 0 ? m.model.p_a : 1 - m.model.p_a, q = L.i === 0 ? m.market.p_a : 1 - m.market.p_a;
+    const ask = (L.i === 0 ? m.market.a : m.market.b).ask;
+    joint *= p; mkt *= q; cost *= (ask || q);
+    return `<div class="card"><div class="row between"><div><div style="font-weight:700">${esc(m.players[L.i])} to win</div><div class="tiny dim">${esc(m.title)} · ${esc(when(m.start))}</div></div><button class="ghost" data-rm="${idx}">✕</button></div>
+      <div class="row between small num" style="margin-top:6px"><span>Model <b>${pct(p,0)}</b></span><span>Kalshi ${pct(q,0)} · ask ${cents(ask)}</span><span class="${p-q>=0?"ev-pos":"ev-neg"}">${(p-q>=0?"+":"")+((p-q)*100).toFixed(1)}</span></div></div>`;
+  });
+  const ev = joint / cost - 1;
+  return `<div class="card">
+    <div class="row between"><div><div class="tiny dim">MODEL PROBABILITY</div><div class="big num">${pct(joint)}</div></div><div style="text-align:right"><div class="tiny dim">FAIR ODDS</div><div class="big num">${american(joint)}</div></div></div>
+    <div class="small dim num" style="margin-top:6px">Kalshi's prices imply ${pct(mkt)} · buying every leg at the ask costs ${cents(cost)} per $1</div>
+    <div class="row between" style="margin-top:8px"><span class="small dim">Expected value at Kalshi prices</span><b class="big num ${ev>=0?"ev-pos":"ev-neg"}">${ev>=0?"+":""}${(ev*100).toFixed(1)}%</b></div>
+  </div>` + rows.join("") + `<button class="ghost" style="width:100%;margin-bottom:12px" id="clearslip">Clear parlay</button>
+  <p class="note">Each leg is a different match, so they're treated as independent. Kalshi combos may price differently from buying legs one by one.</p>`;
+}
+
+function viewModel(){
+  const b = DATA.backtest || {}, src = DATA.sources || {};
+  return `<div class="card"><div style="font-weight:700;margin-bottom:6px">How the model works</div>
+    <div class="small" style="line-height:1.55">
+    • <b>Ratings:</b> every pro match since 2023 updates each player's rating, overall and per surface (hard, clay, grass). Wins over strong players count more.<br>
+    • <b>Serve & return:</b> each player's serve and return points won set how often they hold and break.<br>
+    • <b>Simulation:</b> the match is played out 12,000 times game by game, giving win %, set scores and total games.<br>
+    • <b>Kalshi:</b> the model's win % is compared with the market price; the difference is the edge.</div></div>
+  <h2>Backtest (${b.matches ? b.matches.toLocaleString() : 0} matches since Jan 2025)</h2>
+  <div class="card"><div class="kpis"><div class="kpi"><b class="num">${pct(b.accuracy)}</b><span>Picked winner</span></div><div class="kpi"><b class="num">${b.brier ? b.brier.toFixed(3) : "—"}</b><span>Brier (0.25 = coin flip)</span></div><div class="kpi"><b class="num">${b.log_loss ? b.log_loss.toFixed(3) : "—"}</b><span>Log loss</span></div></div>
+  <table style="margin-top:10px"><thead><tr><th>Favorite's chance</th><th>Matches</th><th>Predicted</th><th>Actual</th></tr></thead><tbody>
+  ${(b.calibration||[]).map(r => `<tr><td>${esc(r.bin)}</td><td class="num">${r.n.toLocaleString()}</td><td class="num">${pct(r.pred)}</td><td class="num">${pct(r.actual)}</td></tr>`).join("")}</tbody></table>
+  <table style="margin-top:10px"><thead><tr><th>Level</th><th>Matches</th><th>Picked winner</th></tr></thead><tbody>
+  ${Object.entries(b.by_level||{}).map(([k,v]) => `<tr><td>${esc(k)}</td><td class="num">${v.n.toLocaleString()}</td><td class="num">${pct(v.acc)}</td></tr>`).join("")}</tbody></table></div>
+  <h2>Data</h2><div class="card small" style="line-height:1.6">
+    Match history: ${Object.entries(src).map(([k,v]) => `${esc({archive:"Sackmann archive", espn:"ESPN tour results", kalshi:"Kalshi settled matches"}[k]||k)} ${Number(v).toLocaleString()}`).join(" · ")}<br>
+    Archive (with serve stats) runs through ${esc(DATA.archive_end)}; later results come from ESPN (ATP/WTA) and Kalshi (Challenger/ITF), which don't include serve stats.<br>
+    Updated ${esc(ago(DATA.generated))}.</div>`;
+}
+
+function route(){
+  const h = (location.hash || "#matches").slice(1);
+  document.querySelectorAll(".tabs a").forEach(a => a.classList.toggle("on", a.dataset.tab === (h.startsWith("m-") ? "matches" : h)));
+  if (!DATA) return;
+  const app = $("#app");
+  if (h.startsWith("m-")) app.innerHTML = viewMatch(decodeURIComponent(h.slice(2)));
+  else if (h === "edges") app.innerHTML = viewMatches(true);
+  else if (h === "slip") app.innerHTML = viewSlip();
+  else if (h === "model") app.innerHTML = viewModel();
+  else app.innerHTML = viewMatches(false);
+  if (!window._same) window.scrollTo(0,0);
+  window._same = false;
+  saveSlip();
+}
+window.addEventListener("hashchange", route);
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-level],[data-add],[data-rm],#clearslip"); if (!t) return;
+  if (t.dataset.level){ LEVEL = t.dataset.level; window._same = true; route(); }
+  else if (t.dataset.add){ const L = {event: t.dataset.add, i: Number(t.dataset.i)}; SLIP = SLIP.filter(x => x.event !== L.event); SLIP.push(L); saveSlip(); toast(`Added · ${SLIP.length} leg${SLIP.length>1?"s":""}`); }
+  else if (t.dataset.rm !== undefined){ SLIP.splice(Number(t.dataset.rm),1); window._same = true; route(); }
+  else if (t.id === "clearslip"){ SLIP = []; route(); }
+});
+fetch("tennis.json?t=" + Date.now(), {cache:"no-store"}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { DATA = d; const n = upcoming().length; $("#updated").textContent = `${n} open Kalshi match${n===1?"":"es"} · updated ${ago(d.generated)}`; route(); })
+  .catch(err => { $("#app").innerHTML = `<div class="empty">Couldn't load tennis data (${esc(err.message)}).<br>The first data refresh may still be running.</div>`; });
+</script>
+</body>
+</html>

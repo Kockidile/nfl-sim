@@ -2,6 +2,14 @@
 
 ## Phone web app
 
+**Tennis** (`docs/tennis.html`, `tennis_sim/`): scans every open Kalshi tennis match
+(ATP, WTA, Challenger, ITF), rates both players with surface-aware Elo built from
+every pro match since 2023 (Sackmann archive + ESPN + Kalshi settled results),
+shapes the match with serve/return stats, simulates it game by game, and shows the
+edge versus Kalshi's price plus set scores and total-games lines.
+`python -m tennis_sim backtest` scores the ratings on 2025-26 matches.
+
+
 Two sports share one site: `docs/index.html` (NFL) and `docs/nba.html` (NBA),
 switchable from the header. The NBA model (`nba_sim/`) projects points,
 rebounds, assists and 3-pointers from per-minute rates × expected minutes,
