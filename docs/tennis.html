@@ -144,7 +144,7 @@ const byId = id => DATA.matches.find(m => m.event === id);
 const upcoming = () => DATA.matches.filter(m => !m.start || new Date(m.start) > Date.now() - 3*3600e3);
 // best side to back: the larger model-minus-market edge
 function bestSide(m){
-  if (!m.model || !Number.isFinite(m.market.p_a)) return null;
+  if (!m.model || !Number.isFinite(m.market.p_a) || m.live || (m.start && new Date(m.start) < Date.now())) return null;
   const ea = m.model.p_a - m.market.p_a;
   return ea >= 0 ? {i:0, edge:ea, p:m.model.p_a, mkt:m.market.p_a, price:m.market.a.ask} : {i:1, edge:-ea, p:1-m.model.p_a, mkt:1-m.market.p_a, price:m.market.b.ask};
 }
@@ -155,7 +155,7 @@ function card(m){
   const pa = m.model ? m.model.p_a : NaN, mk = m.market.p_a;
   const edgeTag = bs && bs.edge >= .03 && m.confidence !== "low" ? `<span class="edge pos">+${(bs.edge*100).toFixed(1)} on ${esc(last(m.players[bs.i]))}</span>` : "";
   return `<a class="card game" href="#m-${encodeURIComponent(m.event)}">
-    <div class="row between small dim"><span>${esc(m.level)} · ${esc(m.surface || "")}</span><span>${esc(when(m.start))}</span></div>
+    <div class="row between small dim"><span>${esc(m.level)} · ${esc(m.surface || "")}</span><span>${m.live || (m.start && new Date(m.start) < Date.now()) ? "<b style='color:var(--bad)'>● LIVE</b>" : esc(when(m.start))}</span></div>
     <div class="vs" style="margin-top:10px">
       <div><div class="pname">${esc(A)}</div><div class="pmeta num">${m.a ? `#${m.a.rank ? Math.round(m.a.rank) : "—"} · ${m.a.last10}` : "no data"}</div></div>
       <div class="dim small">vs</div>

@@ -92,8 +92,15 @@ def analyze(R, smap, ev, series, now):
                   "hold_a": round(sim["hold_a"], 3), "hold_b": round(sim["hold_b"], 3),
                   "spw_a": round(ca, 3), "spw_b": round(cb, 3)},
     })
-    if mkt is not None:
+    started = p["start"] is not None and p["start"] <= now.replace(tzinfo=None)
+    if started:
+        item["live"] = True
+        notes.insert(0, "Match has started: Kalshi's price reflects play so far, so there's no pre-match edge")
+    elif mkt is not None:
         item["edge_a"] = sim["a_win"] - mkt
+        vol = pa_mkt["volume"] + pb_mkt["volume"]
+        if abs(item["edge_a"]) >= 0.20 and vol >= 10000:
+            notes.insert(0, "Big gap vs a heavily traded market: traders may know something the model doesn't (injury, withdrawal, form). Treat with caution.")
     return item
 
 

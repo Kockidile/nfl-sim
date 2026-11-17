@@ -177,7 +177,7 @@ def load_espn(since: date, surf_map: dict) -> pd.DataFrame:
                                      "best_of": 5 if (tour == "M" and (c.get("format") or {}).get("regulation", {}).get("periods") == 5 and ev.get("major")) else 3,
                                      "w_name": (w.get("athlete") or {}).get("displayName"), "l_name": (l.get("athlete") or {}).get("displayName"),
                                      "score": " ".join(f"{a}-{b}" for a, b in zip(ws, ls)), "retired": "ret" in note.lower(),
-                                     "w_rank": (w.get("curatedRank") or {}).get("current"), "l_rank": (l.get("curatedRank") or {}).get("current")})
+                                     "w_rank": None, "l_rank": None})   # ESPN's curatedRank is the tournament seed, not the ranking
             d += timedelta(days=3)
     return pd.DataFrame(rows)
 
