@@ -1,0 +1,19 @@
+{
+ "https://api.elections.kalshi.com/trade-api/v2/series": 200,
+ "n_series_sports": 4300,
+ "n_series_tennis": 169,
+ "https://api.elections.kalshi.com/trade-api/v2/events": 429,
+ "series_with_open_events": [
+  "KXATPCHALLENGERDOUBLES",
+  "KXATPCHALLENGERMATCH",
+  "KXITFWDOUBLES",
+  "KXATPNOVAK25"
+ ],
+ "https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard": 200,
+ "https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard": 200,
+ "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2026.csv": 404,
+ "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_qual_chall_2026.csv": 404,
+ "https://raw.githubusercontent.com/JeffSackmann/tennis_wta/master/wta_matches_2026.csv": 404,
+ "https://raw.githubusercontent.com/JeffSackmann/tennis_wta/master/wta_matches_qual_itf_2026.csv": 404,
+ "https://raw.githubusercontent.com/JeffSackmann/tennis_atp/master/atp_matches_2025.csv": 404
+}
