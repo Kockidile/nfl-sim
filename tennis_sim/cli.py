@@ -72,7 +72,8 @@ def analyze(R, smap, ev, series, now):
     med = sim["games_median"]
     lines = {f"{x + .5:g}": float((g > x + .5).mean()) for x in range(int(med) - 4, int(med) + 4)}
     n_min = min(A.n, B.n)
-    stale = max(pa_prof["days_rest"] or 999, pb_prof["days_rest"] or 999)
+    stale = max(999 if pa_prof["days_rest"] is None else pa_prof["days_rest"],
+                999 if pb_prof["days_rest"] is None else pb_prof["days_rest"])
     conf = "high" if n_min >= 40 and stale <= 45 else "medium" if n_min >= 15 and stale <= 120 else "low"
     notes = []
     for nm, pr in ((a_name, pa_prof), (b_name, pb_prof)):
@@ -92,7 +93,10 @@ def analyze(R, smap, ev, series, now):
                   "hold_a": round(sim["hold_a"], 3), "hold_b": round(sim["hold_b"], 3),
                   "spw_a": round(ca, 3), "spw_b": round(cb, 3)},
     })
-    started = p["start"] is not None and p["start"] <= now.replace(tzinfo=None)
+    # Kalshi's ITF times are estimates and rescheduled matches keep old dates, so only call a
+    # match live when its listed start is within the last 4 hours.
+    nn = now.replace(tzinfo=None)
+    started = p["start"] is not None and nn - timedelta(hours=4) <= p["start"] <= nn
     if started:
         item["live"] = True
         notes.insert(0, "Match has started: Kalshi's price reflects play so far, so there's no pre-match edge")
