@@ -62,6 +62,44 @@ def milestone_legs(res, min_p=0.55):
     return legs
 
 
+def defense_profile(data, tt) -> dict:
+    """What each defense allows: per game and by position group, relative to league average (1.00 = average)."""
+    pg = data.players.copy()
+    if pg.empty or tt.empty:
+        return {}
+    pos = pg.pos.fillna("").str.upper()
+    pg["grp"] = pos.map(lambda x: "C" if "C" in x else "G" if "G" in x else "F" if "F" in x else "F")
+    games = data.teams.groupby("team_id").game_id.nunique()
+    stats = ["pts", "reb", "ast", "fg3"]
+    allowed = pg.groupby(["opp_id", "grp"])[stats].sum()
+    out, rows = {}, []
+    for (tid, grp), r in allowed.iterrows():
+        n = games.get(tid, 0)
+        if n:
+            rows.append({"tid": tid, "grp": grp, **{k: r[k] / n for k in stats}})
+    import pandas as pd
+    df = pd.DataFrame(rows)
+    lg = df.groupby("grp")[stats].mean()
+    for tid, g in df.groupby("tid"):
+        if tid not in tt.index:
+            continue
+        T = tt.loc[tid]
+        by = {}
+        for _, r in g.iterrows():
+            by[r.grp] = {k: round(r[k] / lg.loc[r.grp, k], 3) for k in stats}
+            by[r.grp].update({f"{k}_pg": round(r[k], 1) for k in stats})
+        out[T.abbr] = {"pace": round(float(T.pace), 1), "drtg": round(float(T.adj_drtg), 1), "rk_def": int(T.rk_def),
+                       "reb_allowed": round(float(T.reb_allowed), 1), "ast_allowed": round(float(T.ast_allowed), 1),
+                       "fg3_allowed": round(float(T.fg3_allowed), 1), "by_pos": by}
+    # ranks per position/stat: 30 = gives up the most (best matchup)
+    for grp in ("G", "F", "C"):
+        for k in stats:
+            vals = sorted(((v["by_pos"].get(grp, {}).get(k, 1.0), a) for a, v in out.items()))
+            for i, (_, a) in enumerate(vals):
+                out[a]["by_pos"].setdefault(grp, {})[f"{k}_rank"] = i + 1
+    return out
+
+
 def cmd_export(args):
     today, data, tt, pt = _context(not args.quiet)
     teams = espn.get_teams()
@@ -97,6 +135,10 @@ def cmd_export(args):
             except Exception as e:  # keep the slate if one game fails
                 item["error"] = str(e)
         out["games"].append(item)
+    try:
+        out["defense"] = defense_profile(data, tt)
+    except Exception as e:  # noqa: BLE001
+        print("defense profile failed:", e)
     if not tt.empty:
         cols = ["abbr", "gp", "ppg", "pa_pg", "pace", "adj_ortg", "adj_drtg", "net", "l10_net",
                 "rk_off", "rk_def", "rk_net", "rk_pace"]
