@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sim">
+<meta name="theme-color" content="#0a0f1a">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Picks</title>
+<style>
+:root{
+  --bg:#0a0f1a; --card:#121a2b; --card2:#18223a; --line:#24304a; --text:#e8edf7; --dim:#8b97b0;
+  --accent:#3ddc84; --accent-d:#1f8f52; --warn:#f5b742; --bad:#ff5d5d; --blue:#5aa9ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(76px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+header{position:sticky;top:0;z-index:5;background:rgba(10,15,26,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:20px;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+header h1 .wk{font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:2px 7px}
+header .sub{color:var(--dim);font-size:12px;margin-top:2px}
+main{padding:12px 12px 0;max-width:720px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.game{display:block;color:inherit;text-decoration:none}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.team{font-weight:700;font-size:17px;min-width:44px}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:12px;font-weight:800;font-size:14px;background:var(--card2);border:1px solid var(--line)}
+.dim{color:var(--dim)} .small{font-size:12px} .tiny{font-size:11px}
+.bar{height:6px;border-radius:4px;background:var(--card2);overflow:hidden;display:flex;margin:10px 0 8px}
+.bar>div{height:100%}
+.pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--dim);border:1px solid var(--line)}
+.pill.q{color:var(--warn);border-color:#5b4a1f}.pill.o{color:var(--bad);border-color:#5c2a2a}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.kpi{background:var(--card2);border-radius:12px;padding:8px 10px}
+.kpi b{display:block;font-size:17px}
+.kpi span{font-size:11px;color:var(--dim)}
+h2{font-size:15px;margin:18px 4px 8px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+button,.btn{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:#04210f;border-color:var(--accent);font-weight:700}
+button.ghost{background:transparent}
+button:active{transform:scale(.98)}
+.legbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.legbtns button{text-align:left}
+.legbtns button b{display:block}
+.legbtns button span{font-size:12px;color:var(--dim)}
+.prop{border-top:1px solid var(--line);padding:10px 2px}
+.prop:first-child{border-top:none}
+.prop .name{font-weight:600}
+.prop .exp{margin-top:10px;display:none}
+.prop.open .exp{display:block}
+.num{font-variant-numeric:tabular-nums}
+input[type=number],select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;width:100%}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;background:transparent;padding:8px 4px;font-size:13px}
+.seg button.on{background:var(--accent);color:#04210f;font-weight:700}
+.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;display:flex;background:rgba(10,15,26,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.tabs a{flex:1;text-align:center;color:var(--dim);text-decoration:none;font-size:11px;padding:6px 0;border-radius:10px;position:relative}
+.tabs a svg{display:block;margin:0 auto 2px;width:22px;height:22px}
+.tabs a.on{color:var(--accent)}
+.count{position:absolute;top:0;left:55%;background:var(--accent);color:#04210f;font-weight:800;font-size:10px;border-radius:999px;padding:1px 6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--dim);font-weight:600;font-size:11px;cursor:pointer;white-space:nowrap}
+th.on{color:var(--accent)}
+.rk{display:inline-block;min-width:26px;border-radius:6px;padding:1px 4px;text-align:center;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--accent);color:#04210f;font-weight:700;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+.big{font-size:30px;font-weight:800;letter-spacing:-.5px}
+.ev-pos{color:var(--accent)} .ev-neg{color:var(--bad)}
+.back{color:var(--accent);text-decoration:none;font-weight:600;display:inline-block;margin:2px 4px 10px}
+.note{font-size:12px;color:var(--dim);margin-top:6px}
+.empty{text-align:center;color:var(--dim);padding:40px 16px}
+.who{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.who:first-of-type{border-top:none}
+.who select{padding:6px 8px;font-size:13px}
+details summary{cursor:pointer;color:var(--blue);font-weight:600;list-style:none}
+details summary::-webkit-details-marker{display:none}
+.sport{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.sport a{color:var(--dim);text-decoration:none;font-size:13px;font-weight:700;padding:6px 12px}
+.sport a.on{background:var(--accent);color:#04210f}
+
+:root{--accent:#ffcc4d;--accent-d:#c99a1c}
+header h1 .wk,button.primary,.seg button.on,.count,.toast,.sport a.on{color:#2b2000}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:2px}
+.chips button{padding:6px 12px;border-radius:999px;font-size:13px;white-space:nowrap}
+.chips button.on{background:var(--accent);border-color:var(--accent);color:#2b2000;font-weight:700}
+.leg{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.leg:first-child{border-top:none}
+.leg .ic{font-size:18px;text-align:center}
+.leg .t{font-weight:700;line-height:1.25}
+.leg .s{font-size:12px;color:var(--dim)}
+.leg .r{text-align:right}
+.leg .r b{font-size:16px}
+.pc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.mult{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--dim)}
+.tag.v{color:#3ddc84;border-color:#1f5a3a}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.lbl{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;margin-top:8px}
+.dice{font-size:17px;width:100%;padding:13px;margin-top:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="row between">
+    <h1>Picks <span class="wk">AUTO</span></h1>
+    <div class="sport"><a href="index.html">NFL</a><a href="nba.html">NBA</a><a href="tennis.html">🎾</a><a class="on" href="picks.html">⭐</a></div>
+  </div>
+  <div class="sub" id="updated">Loading data…</div>
+</header>
+<main id="app"><div class="empty">Building today's picks…</div></main>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pct = (p,d=0) => Number.isFinite(p) ? (p*100).toFixed(d) + "%" : "—";
+const store = { get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),1500); }
+function when(iso){ const d=new Date(iso); return isNaN(d) ? "" : d.toLocaleString([], {weekday:"short", hour:"numeric", minute:"2-digit"}); }
+function ago(iso){ const m=Math.round((Date.now()-new Date(iso))/60000); return m<60?m+" min ago":m<1440?Math.round(m/60)+" h ago":Math.round(m/1440)+" d ago"; }
+const ICON = {tennis:"🎾", nba:"🏀", nfl:"🏈"};
+const STAT = {pts:"points", reb:"rebounds", ast:"assists", fg3:"threes", pass_yds:"pass yds", rush_yds:"rush yds", rec_yds:"rec yds"};
+const last = n => String(n||"").split(" ").slice(-1)[0];
+
+let LEGS = [], META = {}, SPORTS = store.get("picks.sports", {tennis:true, nba:true, nfl:true});
+let TARGET = store.get("picks.target", 1.75), MINP = store.get("picks.minp", 0.70), RAND = null;
+
+// ------------------------------------------------------------------ build candidate legs
+function tennisLegs(d){
+  const out = [], now = Date.now();
+  for (const m of d.matches || []){
+    if (!m.model || !Number.isFinite(m.market?.p_a) || m.live || m.confidence === "low") continue;
+    const t = m.start ? new Date(m.start).getTime() : NaN;
+    if (!(t > now - 2*3600e3 && t < now + 36*3600e3)) continue;     // skip stale/old listings
+    const vol = (m.market.a.volume||0) + (m.market.b.volume||0);
+    if (vol < 200) continue;
+    for (const i of [0,1]){
+      const me = i ? m.b : m.a, op = i ? m.a : m.b;
+      const p = i ? 1 - m.model.p_a : m.model.p_a;
+      const ask = (i ? m.market.b : m.market.a).ask, q = i ? 1 - m.market.p_a : m.market.p_a;
+      if (!ask || ask <= 0 || ask >= 0.99) continue;
+      const edge = p - q;
+      if (edge < 0.02 || edge > 0.18 || me.played_7d > 4 || Math.min(me.matches, op.matches) < 30) continue;
+      const sv = me.serve || {}, so = op.serve || {};
+      const why = [];
+      if (me.surface_record) why.push(`${m.surface} ${me.surface_record} vs ${op.surface_record}`);
+      if (sv.brk && so.brk && sv.brk - so.brk >= .05) why.push(`breaks ${pct(sv.brk)} vs ${pct(so.brk)}`);
+      if (sv.hold && so.hold && sv.hold - so.hold >= .05) why.push(`holds ${pct(sv.hold)} vs ${pct(so.hold)}`);
+      why.push(`form ${me.last10} vs ${op.last10}`);
+      out.push({sport:"tennis", game:m.event, start:m.start, title:`${m.players[i]} to win`, sub:`vs ${m.players[1-i]} · ${m.level} · ${m.surface}`,
+        why: why.join(" · "), p, mult: 1/ask, priced:true, ev: p/ask - 1, score: (p/ask - 1) + 0.25*(p - .5) + (m.confidence === "high" ? .02 : 0)});
+    }
+  }
+  return out;
+}
+function propLegs(d, sport){
+  const out = [], now = Date.now();
+  for (const g of d.games || []){
+    if (g.completed || !g.legs) continue;
+    const t = new Date(g.date).getTime();
+    if (!(t > now - 15*60e3 && t < now + 4*86400e3)) continue;
+    for (const L of g.legs){
+      out.push({sport, game:g.id, start:g.date, title:`${L.player} ${L.line}+ ${STAT[L.stat]}`, sub:`${L.team} · ${g.label}`,
+        why: L.l5 != null ? `avg ${L.avg} · last 5 ${L.l5}` : `avg ${L.avg}`, p:L.p, mult: 1/L.p, priced:false, ev:null,
+        score: L.p + (L.l5 != null && L.l5 >= L.line ? .01 : 0)});
+    }
+  }
+  return out;
+}
+function pool(){ return LEGS.filter(L => SPORTS[L.sport] && L.p >= MINP); }
+
+// ------------------------------------------------------------------ parlay builders
+function combine(legs){
+  const p = legs.reduce((a,L) => a*L.p, 1), mult = legs.reduce((a,L) => a*L.mult, 1);
+  const priced = legs.every(L => L.priced);
+  return {legs, p, mult, priced, ev: priced ? p*mult - 1 : null};
+}
+// best parlay near a target: greedy over legs sorted by score, one leg per game
+function best(target, legs){
+  const used = new Set(), pick = [];
+  let mult = 1;
+  for (const L of legs.slice().sort((a,b) => b.score - a.score)){
+    if (used.has(L.game)) continue;
+    if (mult * L.mult > target * 1.12) continue;
+    pick.push(L); used.add(L.game); mult *= L.mult;
+    if (mult >= target * 0.9) break;
+  }
+  return pick.length && mult >= target * 0.85 ? combine(pick) : null;
+}
+function randomParlay(target, legs){
+  for (let tries = 0; tries < 400; tries++){
+    const bag = legs.map(L => ({L, k: Math.random() ** (1 / Math.max(L.score, .05))})).sort((a,b) => b.k - a.k).map(x => x.L);
+    const used = new Set(), pick = []; let mult = 1;
+    for (const L of bag){
+      if (used.has(L.game) || mult * L.mult > target * 1.1) continue;
+      pick.push(L); used.add(L.game); mult *= L.mult;
+      if (mult >= target * 0.92) return combine(pick);
+    }
+  }
+  return null;
+}
+
+// ------------------------------------------------------------------ views
+function legRow(L){
+  return `<div class="leg"><div class="ic">${ICON[L.sport]}</div>
+    <div><div class="t">${esc(L.title)}</div><div class="s">${esc(L.sub)} · ${esc(when(L.start))}</div><div class="s">${esc(L.why)}</div></div>
+    <div class="r"><b class="num">${pct(L.p)}</b><div class="s num">${L.priced ? `${L.mult.toFixed(2)}× Kalshi` : `${L.mult.toFixed(2)}× fair`}</div></div></div>`;
+}
+function parlayCard(title, P, note){
+  if (!P) return `<div class="card"><div style="font-weight:700">${esc(title)}</div><div class="note">Not enough qualifying legs right now. Try lowering the minimum leg chance or adding sports.</div></div>`;
+  const txt = P.legs.map(L => `${ICON[L.sport]} ${L.title}`).join("\n");
+  return `<div class="card">
+    <div class="pc-head"><div><div style="font-weight:700">${esc(title)}</div><div class="s small dim">${esc(note || "")}</div></div>
+      <div style="text-align:right"><div class="mult num">${P.mult.toFixed(2)}×</div><div class="tiny dim">${P.priced ? "at Kalshi asks" : "fair payout"}</div></div></div>
+    <div class="row" style="gap:6px;margin:8px 0 2px;flex-wrap:wrap"><span class="tag">Model hit chance ${pct(P.p)}</span>${P.priced ? `<span class="tag ${P.ev >= 0 ? "v" : ""}">EV ${P.ev >= 0 ? "+" : ""}${(P.ev*100).toFixed(0)}%</span>` : `<span class="tag">Compare with Kalshi's combo price</span>`}</div>
+    ${P.legs.map(legRow).join("")}
+    <button class="ghost" style="width:100%;margin-top:8px" data-copy="${esc(txt)}">Copy legs</button></div>`;
+}
+function render(){
+  const legs = pool();
+  const chips = ["tennis","nba","nfl"].map(s => `<button data-sport="${s}" class="${SPORTS[s] ? "on" : ""}">${ICON[s]} ${s.toUpperCase()} <span class="dim">${LEGS.filter(L => L.sport===s && L.p >= MINP).length}</span></button>`).join("");
+  let html = `<div class="chips">${chips}</div>
+  <div class="card">
+    <div style="font-weight:700">🎲 Parlay randomizer</div>
+    <div class="lbl"><span>Target payout</span><b class="num" id="tv">${TARGET.toFixed(2)}×</b></div>
+    <input type="range" min="1.3" max="10" step="0.05" value="${TARGET}" id="target">
+    <div class="lbl"><span>Minimum chance per leg</span><b class="num" id="mv">${pct(MINP)}</b></div>
+    <input type="range" min="0.55" max="0.95" step="0.01" value="${MINP}" id="minp">
+    <button class="primary dice" id="roll">🎲 Roll a parlay</button>
+  </div>
+  <div id="rand">${RAND ? parlayCard("Your random parlay", RAND, "Weighted toward the model's strongest legs, one leg per game") : ""}</div>
+  <h2>Today's best parlays</h2>`;
+  const tennis = legs.filter(L => L.sport === "tennis");
+  html += parlayCard("Safe · about 1.75×", best(1.75, legs), "Highest-rated legs that reach the target");
+  html += parlayCard("Medium · about 3×", best(3, legs), "");
+  html += parlayCard("Long shot · about 6×", best(6, legs), "");
+  if (tennis.length >= 2) html += parlayCard("🎾 Value parlay · about 2.5×", best(2.5, tennis), "Tennis only: every leg priced below the model's chance on Kalshi");
+  html += `<h2>Top legs (${legs.length})</h2><div class="card">${legs.slice().sort((a,b) => b.score - a.score).slice(0, 25).map(legRow).join("") || `<div class="dim small">No legs meet the filters right now.</div>`}</div>
+  <div class="note" style="margin:0 4px 20px;line-height:1.5">🎾 Tennis legs are priced against Kalshi's current ask, so the payout and EV are real (until prices move). 🏀🏈 Player props are the highest "X+" line the model rates at or above your minimum chance; their payout is the model's fair price, and Kalshi will usually pay a bit less, so compare. Questionable players, thin markets, stale listings and big model-vs-market gaps are filtered out. Legs from different games are treated as independent. Data refreshes automatically; this page re-checks every 10 minutes.</div>`;
+  $("#app").innerHTML = html;
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-sport],#roll,[data-copy]"); if (!t) return;
+  if (t.dataset.sport){ SPORTS[t.dataset.sport] = !SPORTS[t.dataset.sport]; store.set("picks.sports", SPORTS); RAND = null; render(); }
+  else if (t.id === "roll"){ RAND = randomParlay(TARGET, pool()); if (!RAND) toast("No combo hits that target — try a lower minimum chance"); render(); document.getElementById("rand").scrollIntoView({behavior:"smooth", block:"start"}); }
+  else if (t.dataset.copy){ navigator.clipboard?.writeText(t.dataset.copy).then(() => toast("Copied"), () => toast("Copy not allowed here")); }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "target"){ TARGET = Number(e.target.value); store.set("picks.target", TARGET); $("#tv").textContent = TARGET.toFixed(2) + "×"; }
+  if (e.target.id === "minp"){ MINP = Number(e.target.value); store.set("picks.minp", MINP); $("#mv").textContent = pct(MINP); }
+});
+document.addEventListener("change", e => { if (e.target.id === "minp" || e.target.id === "target"){ RAND = null; render(); } });
+
+async function load(){
+  const get = f => fetch(f + "?t=" + Date.now(), {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null);
+  const [ten, nba, nfl] = await Promise.all([get("tennis.json"), get("nba.json"), get("data.json")]);
+  LEGS = [...(ten ? tennisLegs(ten) : []), ...(nba ? propLegs(nba, "nba") : []), ...(nfl ? propLegs(nfl, "nfl") : [])];
+  const times = [ten, nba, nfl].filter(Boolean).map(d => d.generated).sort();
+  $("#updated").textContent = `${LEGS.length} qualifying legs · data updated ${times.length ? ago(times[0]) : "—"}`;
+  render();
+}
+load();
+setInterval(load, 10 * 60e3);
+</script>
+</body>
+</html>

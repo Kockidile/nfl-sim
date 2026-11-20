@@ -42,6 +42,29 @@ def _side_json(side, injuries):
             "injuries": [{"name": i.name, "pos": i.pos, "status": i.status, "detail": i.detail} for i in injuries]}
 
 
+MILESTONES = {"pts": [10, 15, 20, 25, 30, 35], "reb": [4, 6, 8, 10, 12], "ast": [2, 4, 6, 8, 10], "fg3": [1, 2, 3, 4, 5]}
+
+
+def milestone_legs(res, min_p=0.6):
+    """For each player and stat: the highest Kalshi-style 'X+' line the model rates at least min_p."""
+    legs = []
+    for pid, r in res["players"].items():
+        pl = r["played"]
+        if pl.mean() < 0.9:   # skip questionable players for auto-picks
+            continue
+        for st, lines in MILESTONES.items():
+            y = r[st][pl]
+            best = None
+            for t in lines:
+                pr = float((y >= t - 0.5).mean())   # counts are whole numbers
+                if pr >= min_p:
+                    best = (t, pr)
+            if best:
+                legs.append({"pid": pid, "player": r["p"].name, "team": r["team"], "stat": st, "line": best[0],
+                             "p": round(best[1], 3), "avg": r["p"].season_avg[st], "l5": r["p"].l5.get(st)})
+    return legs
+
+
 def cmd_export(args):
     today, data, tt, pt = _context(not args.quiet)
     teams = espn.get_teams()
@@ -71,6 +94,7 @@ def cmd_export(args):
                                    "spread_home": float(-mg.mean()), "total": float((res["hp"] + res["ap"]).mean()),
                                    "home_pts": float(res["hp"].mean()), "away_pts": float(res["ap"].mean())}
                 item["pace"] = round(m.pace, 1)
+                item["legs"] = milestone_legs(res)
                 item["sides"] = {"home": _side_json(m.home, injuries.get(g.home.id, [])),
                                  "away": _side_json(m.away, injuries.get(g.away.id, []))}
             except Exception as e:  # keep the slate if one game fails

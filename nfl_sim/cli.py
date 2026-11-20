@@ -248,6 +248,29 @@ def _side_json(side, injuries):
     }
 
 
+NFL_MILESTONES = {"pass_yds": [150, 175, 200, 225, 250, 275, 300], "rush_yds": [25, 40, 50, 60, 75, 100],
+                  "rec_yds": [25, 40, 50, 60, 75, 100]}
+
+
+def _milestone_legs(res, min_p=0.6):
+    legs = []
+    for pid, (p, team) in res.players.items():
+        pl = res.played[pid]
+        if pl.mean() < 0.9:
+            continue
+        for st, lines in NFL_MILESTONES.items():
+            y = res.yards[pid][st][pl]
+            best = None
+            for t_ in lines:
+                pr = float((y >= t_).mean())
+                if pr >= min_p:
+                    best = (t_, pr)
+            if best:
+                legs.append({"pid": pid, "player": p.name, "team": team, "stat": st, "line": best[0],
+                             "p": round(best[1], 3), "avg": round(float(p.season_avg[st]), 1)})
+    return legs
+
+
 def cmd_export(args):
     """Write everything the phone web app needs to one JSON file."""
     import json
@@ -274,7 +297,9 @@ def cmd_export(args):
                 mu = model.build_matchup(g, tt, pt, injuries, rosters, wx)
                 item["weather"] = {"indoor": wx.indoor, "text": wx.describe(), "temp_f": wx.temp_f,
                                    "wind_mph": wx.wind_mph, "precip_prob": wx.precip_prob}
-                item["summary"] = model.summary(model.simulate(mu, n=20000, seed=1))
+                res = model.simulate(mu, n=20000, seed=1)
+                item["summary"] = model.summary(res)
+                item["legs"] = _milestone_legs(res)
                 item["sides"] = {"home": _side_json(mu.home, injuries.get(g.home.id, [])),
                                  "away": _side_json(mu.away, injuries.get(g.away.id, []))}
             except Exception as e:  # keep the rest of the slate if one game fails
