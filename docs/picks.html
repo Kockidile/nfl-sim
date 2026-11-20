@@ -129,7 +129,7 @@ const STAT = {pts:"points", reb:"rebounds", ast:"assists", fg3:"threes", pass_yd
 const last = n => String(n||"").split(" ").slice(-1)[0];
 
 let LEGS = [], META = {}, SPORTS = store.get("picks.sports", {tennis:true, nba:true, nfl:true});
-let TARGET = store.get("picks.target", 1.75), MINP = store.get("picks.minp", 0.70), RAND = null;
+let TARGET = store.get("picks.target", 1.75), MINP = store.get("picks.min2", 0.55), MAXP = store.get("picks.max2", 0.85), RAND = null;
 
 // ------------------------------------------------------------------ build candidate legs
 function tennisLegs(d){
@@ -173,7 +173,6 @@ function propLegs(d, sport){
   }
   return out;
 }
-const MAXP = 0.93;   // every leg must add at least ~1.07x
 function pool(){ return LEGS.filter(L => SPORTS[L.sport] && L.p >= MINP && L.p <= MAXP); }
 
 // ------------------------------------------------------------------ parlay builders
@@ -214,7 +213,7 @@ function legRow(L){
     <div class="r"><b class="num">${pct(L.p)}</b><div class="s num">${L.priced ? `${L.mult.toFixed(2)}× Kalshi` : `${L.mult.toFixed(2)}× fair`}</div></div></div>`;
 }
 function parlayCard(title, P, note){
-  if (!P) return `<div class="card"><div style="font-weight:700">${esc(title)}</div><div class="note">Not enough qualifying legs right now. Try lowering the minimum leg chance or adding sports.</div></div>`;
+  if (!P) return `<div class="card"><div style="font-weight:700">${esc(title)}</div><div class="note">Not enough qualifying legs right now. Try widening the leg-chance range or adding sports.</div></div>`;
   const txt = P.legs.map(L => `${ICON[L.sport]} ${L.title}`).join("\n");
   return `<div class="card">
     <div class="pc-head"><div><div style="font-weight:700">${esc(title)}</div><div class="s small dim">${esc(note || "")}</div></div>
@@ -231,8 +230,10 @@ function render(){
     <div style="font-weight:700">🎲 Parlay randomizer</div>
     <div class="lbl"><span>Target payout</span><b class="num" id="tv">${TARGET.toFixed(2)}×</b></div>
     <input type="range" min="1.3" max="10" step="0.05" value="${TARGET}" id="target">
-    <div class="lbl"><span>Minimum chance per leg</span><b class="num" id="mv">${pct(MINP)}</b></div>
-    <input type="range" min="0.55" max="0.95" step="0.01" value="${MINP}" id="minp">
+    <div class="lbl"><span>Leg chance: lowest</span><b class="num" id="mv">${pct(MINP)}</b></div>
+    <input type="range" min="0.55" max="0.93" step="0.01" value="${MINP}" id="minp">
+    <div class="lbl"><span>Leg chance: highest</span><b class="num" id="xv">${pct(MAXP)}</b></div>
+    <input type="range" min="0.6" max="0.95" step="0.01" value="${MAXP}" id="maxp">
     <button class="primary dice" id="roll">🎲 Roll a parlay</button>
   </div>
   <div id="rand">${RAND ? parlayCard("Your random parlay", RAND, "Weighted toward the model's strongest legs, one leg per game") : ""}</div>
@@ -243,21 +244,22 @@ function render(){
   html += parlayCard("Long shot · about 6×", best(6, legs), "");
   if (tennis.length >= 2) html += parlayCard("🎾 Value parlay · about 2.5×", best(2.5, tennis), "Tennis only: every leg priced below the model's chance on Kalshi");
   html += `<h2>Top legs (${legs.length})</h2><div class="card">${legs.slice().sort((a,b) => b.score - a.score).slice(0, 25).map(legRow).join("") || `<div class="dim small">No legs meet the filters right now.</div>`}</div>
-  <div class="note" style="margin:0 4px 20px;line-height:1.5">🎾 Tennis legs are priced against Kalshi's current ask, so the payout and EV are real (until prices move). 🏀🏈 Player props are the highest "X+" line the model rates at or above your minimum chance; their payout is the model's fair price, and Kalshi will usually pay a bit less, so compare. Questionable players, thin markets, stale listings and big model-vs-market gaps are filtered out. Legs from different games are treated as independent. Data refreshes automatically; this page re-checks every 10 minutes.</div>`;
+  <div class="note" style="margin:0 4px 20px;line-height:1.5">🎾 Tennis legs are priced against Kalshi's current ask, so the payout and EV are real (until prices move). 🏀🏈 Player props are Kalshi-style "X+" lines whose model chance falls inside your range; their payout is the model's fair price, and Kalshi will usually pay a bit less, so compare. Questionable players, thin markets, stale listings and big model-vs-market gaps are filtered out. Legs from different games are treated as independent. Data refreshes automatically; this page re-checks every 10 minutes.</div>`;
   $("#app").innerHTML = html;
 }
 
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-sport],#roll,[data-copy]"); if (!t) return;
   if (t.dataset.sport){ SPORTS[t.dataset.sport] = !SPORTS[t.dataset.sport]; store.set("picks.sports", SPORTS); RAND = null; render(); }
-  else if (t.id === "roll"){ RAND = randomParlay(TARGET, pool()); if (!RAND) toast("No combo hits that target — try a lower minimum chance"); render(); document.getElementById("rand").scrollIntoView({behavior:"smooth", block:"start"}); }
+  else if (t.id === "roll"){ RAND = randomParlay(TARGET, pool()); if (!RAND) toast("No combo hits that target — try widening the chance range"); render(); document.getElementById("rand").scrollIntoView({behavior:"smooth", block:"start"}); }
   else if (t.dataset.copy){ navigator.clipboard?.writeText(t.dataset.copy).then(() => toast("Copied"), () => toast("Copy not allowed here")); }
 });
 document.addEventListener("input", e => {
   if (e.target.id === "target"){ TARGET = Number(e.target.value); store.set("picks.target", TARGET); $("#tv").textContent = TARGET.toFixed(2) + "×"; }
-  if (e.target.id === "minp"){ MINP = Number(e.target.value); store.set("picks.minp", MINP); $("#mv").textContent = pct(MINP); }
+  if (e.target.id === "minp"){ MINP = Math.min(Number(e.target.value), MAXP - .02); store.set("picks.min2", MINP); $("#mv").textContent = pct(MINP); }
+  if (e.target.id === "maxp"){ MAXP = Math.max(Number(e.target.value), MINP + .02); store.set("picks.max2", MAXP); $("#xv").textContent = pct(MAXP); }
 });
-document.addEventListener("change", e => { if (e.target.id === "minp" || e.target.id === "target"){ RAND = null; render(); } });
+document.addEventListener("change", e => { if (["minp","maxp","target"].includes(e.target.id)){ RAND = null; render(); } });
 
 async function load(){
   const get = f => fetch(f + "?t=" + Date.now(), {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null);

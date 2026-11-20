@@ -252,7 +252,7 @@ NFL_MILESTONES = {"pass_yds": [150, 175, 200, 225, 250, 275, 300], "rush_yds": [
                   "rec_yds": [25, 40, 50, 60, 75, 100]}
 
 
-def _milestone_legs(res, min_p=0.6):
+def _milestone_legs(res, min_p=0.55):
     legs = []
     for pid, (p, team) in res.players.items():
         pl = res.played[pid]

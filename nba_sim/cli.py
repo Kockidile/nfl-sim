@@ -45,7 +45,7 @@ def _side_json(side, injuries):
 MILESTONES = {"pts": [10, 15, 20, 25, 30, 35], "reb": [4, 6, 8, 10, 12], "ast": [2, 4, 6, 8, 10], "fg3": [1, 2, 3, 4, 5]}
 
 
-def milestone_legs(res, min_p=0.6):
+def milestone_legs(res, min_p=0.55):
     """For each player and stat: the highest Kalshi-style 'X+' line the model rates at least min_p."""
     legs = []
     for pid, r in res["players"].items():
