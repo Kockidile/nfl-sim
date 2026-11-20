@@ -54,14 +54,11 @@ def milestone_legs(res, min_p=0.6):
             continue
         for st, lines in MILESTONES.items():
             y = r[st][pl]
-            best = None
             for t in lines:
                 pr = float((y >= t - 0.5).mean())   # counts are whole numbers
-                if pr >= min_p:
-                    best = (t, pr)
-            if best:
-                legs.append({"pid": pid, "player": r["p"].name, "team": r["team"], "stat": st, "line": best[0],
-                             "p": round(best[1], 3), "avg": r["p"].season_avg[st], "l5": r["p"].l5.get(st)})
+                if min_p <= pr <= 0.95:              # skip near-certain lines that pay almost nothing
+                    legs.append({"pid": pid, "player": r["p"].name, "team": r["team"], "stat": st, "line": t,
+                                 "p": round(pr, 3), "avg": r["p"].season_avg[st], "l5": r["p"].l5.get(st)})
     return legs
 
 

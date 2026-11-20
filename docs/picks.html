@@ -164,16 +164,17 @@ function propLegs(d, sport){
   for (const g of d.games || []){
     if (g.completed || !g.legs) continue;
     const t = new Date(g.date).getTime();
-    if (!(t > now - 15*60e3 && t < now + 4*86400e3)) continue;
+    if (!(t > now - 15*60e3 && t < now + (sport === "nba" ? 36*3600e3 : 6*86400e3))) continue;
     for (const L of g.legs){
       out.push({sport, game:g.id, start:g.date, title:`${L.player} ${L.line}+ ${STAT[L.stat]}`, sub:`${L.team} · ${g.label}`,
         why: L.l5 != null ? `avg ${L.avg} · last 5 ${L.l5}` : `avg ${L.avg}`, p:L.p, mult: 1/L.p, priced:false, ev:null,
-        score: L.p + (L.l5 != null && L.l5 >= L.line ? .01 : 0)});
+        score: L.p + (L.l5 != null && L.l5 >= L.line ? .015 : -.015) + (L.avg && L.line >= 0.6 * L.avg ? .01 : -.03)});
     }
   }
   return out;
 }
-function pool(){ return LEGS.filter(L => SPORTS[L.sport] && L.p >= MINP); }
+const MAXP = 0.93;   // every leg must add at least ~1.07x
+function pool(){ return LEGS.filter(L => SPORTS[L.sport] && L.p >= MINP && L.p <= MAXP); }
 
 // ------------------------------------------------------------------ parlay builders
 function combine(legs){
@@ -224,7 +225,7 @@ function parlayCard(title, P, note){
 }
 function render(){
   const legs = pool();
-  const chips = ["tennis","nba","nfl"].map(s => `<button data-sport="${s}" class="${SPORTS[s] ? "on" : ""}">${ICON[s]} ${s.toUpperCase()} <span class="dim">${LEGS.filter(L => L.sport===s && L.p >= MINP).length}</span></button>`).join("");
+  const chips = ["tennis","nba","nfl"].map(s => `<button data-sport="${s}" class="${SPORTS[s] ? "on" : ""}">${ICON[s]} ${s.toUpperCase()} <span class="dim">${LEGS.filter(L => L.sport===s && L.p >= MINP && L.p <= MAXP).length}</span></button>`).join("");
   let html = `<div class="chips">${chips}</div>
   <div class="card">
     <div style="font-weight:700">🎲 Parlay randomizer</div>

@@ -260,14 +260,11 @@ def _milestone_legs(res, min_p=0.6):
             continue
         for st, lines in NFL_MILESTONES.items():
             y = res.yards[pid][st][pl]
-            best = None
             for t_ in lines:
                 pr = float((y >= t_).mean())
-                if pr >= min_p:
-                    best = (t_, pr)
-            if best:
-                legs.append({"pid": pid, "player": p.name, "team": team, "stat": st, "line": best[0],
-                             "p": round(best[1], 3), "avg": round(float(p.season_avg[st]), 1)})
+                if min_p <= pr <= 0.95:
+                    legs.append({"pid": pid, "player": p.name, "team": team, "stat": st, "line": t_,
+                                 "p": round(pr, 3), "avg": round(float(p.season_avg[st]), 1)})
     return legs
 
 
