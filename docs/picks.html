@@ -189,7 +189,7 @@ function best(target, legs){
     if (used.has(L.game)) continue;
     if (mult * L.mult > target * 1.12) continue;
     pick.push(L); used.add(L.game); mult *= L.mult;
-    if (mult >= target * 0.9) break;
+    if (mult >= target * 0.95) break;
   }
   return pick.length && mult >= target * 0.85 ? combine(pick) : null;
 }
