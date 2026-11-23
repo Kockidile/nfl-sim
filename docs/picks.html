@@ -132,33 +132,57 @@ let LEGS = [], META = {}, SPORTS = store.get("picks.sports", {tennis:true, nba:t
 let TARGET = store.get("picks.target", 1.75), MINP = store.get("picks.min2", 0.55), MAXP = store.get("picks.max2", 0.85), RAND = null;
 
 // ------------------------------------------------------------------ build candidate legs
+// Tennis filter levels: how strict to be about price edge, liquidity, data depth and fatigue
+const TMODES = {
+  value:    {label:"Value only", minEdge:.02,  maxEdge:.18, vol:200, conf:["medium","high"], p7:4, games:30, note:"Model beats Kalshi's price by 2+ points"},
+  balanced: {label:"Balanced",   minEdge:-.04, maxEdge:.22, vol:25,  conf:["medium","high"], p7:5, games:15, note:"Strong picks priced fair or better (up to 4 points worse than Kalshi)"},
+  wide:     {label:"Everything", minEdge:-.08, maxEdge:.30, vol:0,   conf:["low","medium","high"], p7:6, games:8, note:"Every model favorite with a price, including thin data and low volume"}
+};
+let TMODE = store.get("picks.tmode", "balanced"), LOTTO_N = store.get("picks.lotto", 12);
 function tennisLegs(d){
-  const out = [], now = Date.now();
+  const out = [], now = Date.now(), F = TMODES[TMODE] || TMODES.balanced;
   for (const m of d.matches || []){
-    if (!m.model || !Number.isFinite(m.market?.p_a) || m.live || m.confidence === "low") continue;
+    if (!m.model || !Number.isFinite(m.market?.p_a) || m.live || !F.conf.includes(m.confidence)) continue;
     const t = m.start ? new Date(m.start).getTime() : NaN;
     if (!(t > now - 2*3600e3 && t < now + 36*3600e3)) continue;     // skip stale/old listings
     const vol = (m.market.a.volume||0) + (m.market.b.volume||0);
-    if (vol < 200) continue;
+    if (vol < F.vol) continue;
     for (const i of [0,1]){
       const me = i ? m.b : m.a, op = i ? m.a : m.b;
       const p = i ? 1 - m.model.p_a : m.model.p_a;
       const ask = (i ? m.market.b : m.market.a).ask, q = i ? 1 - m.market.p_a : m.market.p_a;
-      if (!ask || ask <= 0 || ask >= 0.99) continue;
+      if (!ask || ask <= 0 || ask >= 0.99 || p < 0.5) continue;
       const edge = p - q;
-      if (edge < 0.02 || edge > 0.18 || me.played_7d > 4 || Math.min(me.matches, op.matches) < 30) continue;
+      if (edge < F.minEdge || edge > F.maxEdge || (me.played_7d||0) > F.p7 || Math.min(me.matches||0, op.matches||0) < F.games) continue;
       const sv = me.serve || {}, so = op.serve || {};
       const why = [];
+      if (me.rank && op.rank) why.push(`rank ${me.rank} vs ${op.rank}`);
       if (me.surface_record) why.push(`${m.surface} ${me.surface_record} vs ${op.surface_record}`);
       if (sv.brk && so.brk && sv.brk - so.brk >= .05) why.push(`breaks ${pct(sv.brk)} vs ${pct(so.brk)}`);
       if (sv.hold && so.hold && sv.hold - so.hold >= .05) why.push(`holds ${pct(sv.hold)} vs ${pct(so.hold)}`);
       why.push(`form ${me.last10} vs ${op.last10}`);
+      if ((op.played_7d||0) >= 4) why.push(`opp played ${op.played_7d} in 7d`);
+      why.push(edge >= .02 ? `value +${(edge*100).toFixed(0)} pts` : `fair price`);
+      const fatigue = Math.max(0, (me.played_7d||0) - 3) * .02, confB = {high:.02, medium:0, low:-.04}[m.confidence] || 0;
       out.push({sport:"tennis", game:m.event, start:m.start, title:`${m.players[i]} to win`, sub:`vs ${m.players[1-i]} · ${m.level} · ${m.surface}`,
-        why: why.join(" · "), p, mult: 1/ask, priced:true, ev: p/ask - 1, score: (p/ask - 1) + 0.25*(p - .5) + (m.confidence === "high" ? .02 : 0)});
+        why: why.join(" · "), p, mult: 1/ask, priced:true, ev: p/ask - 1, edge,
+        score: (p/ask - 1) + 0.25*(p - .5) + confB - fatigue + (vol >= 500 ? .01 : 0)});
     }
   }
   return out;
 }
+// Tennis lotto: the N most likely tennis winners (one per match, value as tiebreak), ignoring the payout target
+function lotto(n, legs){
+  const used = new Set(), pick = [];
+  const key = L => L.p + 0.3*Math.max(-.05, Math.min(L.ev, .2)) - (L.why.includes("fair price") ? .01 : 0);   // likely winners first, value as tiebreak
+  for (const L of legs.filter(L => L.sport === "tennis").sort((a,b) => key(b) - key(a))){
+    if (used.has(L.game)) continue;
+    pick.push(L); used.add(L.game);
+    if (pick.length >= n) break;
+  }
+  return pick.length >= 2 ? combine(pick) : null;
+}
+let TEN = null;
 function propLegs(d, sport){
   const out = [], now = Date.now();
   for (const g of d.games || []){
@@ -237,34 +261,50 @@ function render(){
     <button class="primary dice" id="roll">🎲 Roll a parlay</button>
   </div>
   <div id="rand">${RAND ? parlayCard("Your random parlay", RAND, "Weighted toward the model's strongest legs, one leg per game") : ""}</div>
+  <div class="card">
+    <div style="font-weight:700">🎾 Tennis options</div>
+    <div class="chips" style="margin:8px 0 4px">${Object.entries(TMODES).map(([k,v]) => `<button data-tmode="${k}" class="${TMODE===k ? "on" : ""}">${v.label}</button>`).join("")}</div>
+    <div class="s small dim">${esc(TMODES[TMODE].note)} · ${LEGS.filter(L => L.sport==="tennis").length} tennis legs before the chance range</div>
+    <div class="lbl"><span>Tennis lotto legs</span><b class="num" id="lv">${LOTTO_N}</b></div>
+    <input type="range" min="4" max="15" step="1" value="${LOTTO_N}" id="lotto">
+  </div>
   <h2>Today's best parlays</h2>`;
   const tennis = legs.filter(L => L.sport === "tennis");
   html += parlayCard("Safe · about 1.75×", best(1.75, legs), "Highest-rated legs that reach the target");
   html += parlayCard("Medium · about 3×", best(3, legs), "");
   html += parlayCard("Long shot · about 6×", best(6, legs), "");
   if (tennis.length >= 2) html += parlayCard("🎾 Value parlay · about 2.5×", best(2.5, tennis), "Tennis only: every leg priced below the model's chance on Kalshi");
-  html += `<h2>Top legs (${legs.length})</h2><div class="card">${legs.slice().sort((a,b) => b.score - a.score).slice(0, 25).map(legRow).join("") || `<div class="dim small">No legs meet the filters right now.</div>`}</div>
-  <div class="note" style="margin:0 4px 20px;line-height:1.5">🎾 Tennis legs are priced against Kalshi's current ask, so the payout and EV are real (until prices move). 🏀🏈 Player props are Kalshi-style "X+" lines whose model chance falls inside your range; their payout is the model's fair price, and Kalshi will usually pay a bit less, so compare. Questionable players, thin markets, stale listings and big model-vs-market gaps are filtered out. Legs from different games are treated as independent. Data refreshes automatically; this page re-checks every 10 minutes.</div>`;
+  if (SPORTS.tennis){
+    const L = lotto(LOTTO_N, LEGS.filter(x => x.p >= MINP));   // lotto ignores the max-chance slider so heavy favorites can anchor it
+    html += parlayCard(`🎾 Tennis lotto · ${L ? L.legs.length : 0} legs`, L, L && L.legs.length < LOTTO_N ? `Only ${L.legs.length} tennis legs qualify. Switch to Balanced or Everything, or lower the leg-chance minimum` : `Most likely tennis winners, one per match (chance ${pct(MINP)} and up, max slider ignored)`);
+  }
+  html += `<h2>Top legs (${legs.length})</h2><div class="card">${legs.slice().sort((a,b) => b.score - a.score).slice(0, 40).map(legRow).join("") || `<div class="dim small">No legs meet the filters right now.</div>`}</div>
+  <div class="note" style="margin:0 4px 20px;line-height:1.5">🎾 Tennis legs are priced against Kalshi's current ask, so the payout and EV are real (until prices move). 🏀🏈 Player props are Kalshi-style "X+" lines whose model chance falls inside your range; their payout is the model's fair price, and Kalshi will usually pay a bit less, so compare. Tennis filtering depends on the Tennis options setting: Value only needs a price edge and liquid markets, Balanced also allows fairly priced favorites, and Everything includes thin data (lower confidence). Questionable players, stale listings and big model-vs-market gaps are always filtered out. Legs from different games are treated as independent. Data refreshes automatically; this page re-checks every 10 minutes.</div>`;
   $("#app").innerHTML = html;
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-sport],#roll,[data-copy]"); if (!t) return;
-  if (t.dataset.sport){ SPORTS[t.dataset.sport] = !SPORTS[t.dataset.sport]; store.set("picks.sports", SPORTS); RAND = null; render(); }
+  const t = e.target.closest("[data-sport],[data-tmode],#roll,[data-copy]"); if (!t) return;
+  if (t.dataset.tmode){ TMODE = t.dataset.tmode; store.set("picks.tmode", TMODE); rebuild(); RAND = null; render(); }
+  else if (t.dataset.sport){ SPORTS[t.dataset.sport] = !SPORTS[t.dataset.sport]; store.set("picks.sports", SPORTS); RAND = null; render(); }
   else if (t.id === "roll"){ RAND = randomParlay(TARGET, pool()); if (!RAND) toast("No combo hits that target — try widening the chance range"); render(); document.getElementById("rand").scrollIntoView({behavior:"smooth", block:"start"}); }
   else if (t.dataset.copy){ navigator.clipboard?.writeText(t.dataset.copy).then(() => toast("Copied"), () => toast("Copy not allowed here")); }
 });
 document.addEventListener("input", e => {
+  if (e.target.id === "lotto"){ LOTTO_N = Number(e.target.value); store.set("picks.lotto", LOTTO_N); $("#lv").textContent = LOTTO_N; }
   if (e.target.id === "target"){ TARGET = Number(e.target.value); store.set("picks.target", TARGET); $("#tv").textContent = TARGET.toFixed(2) + "×"; }
   if (e.target.id === "minp"){ MINP = Math.min(Number(e.target.value), MAXP - .02); store.set("picks.min2", MINP); $("#mv").textContent = pct(MINP); }
   if (e.target.id === "maxp"){ MAXP = Math.max(Number(e.target.value), MINP + .02); store.set("picks.max2", MAXP); $("#xv").textContent = pct(MAXP); }
 });
-document.addEventListener("change", e => { if (["minp","maxp","target"].includes(e.target.id)){ RAND = null; render(); } });
+document.addEventListener("change", e => { if (["minp","maxp","target","lotto"].includes(e.target.id)){ RAND = null; render(); } });
 
+let OTHER = [];
+function rebuild(){ LEGS = [...(TEN ? tennisLegs(TEN) : []), ...OTHER]; }
 async function load(){
   const get = f => fetch(f + "?t=" + Date.now(), {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null);
   const [ten, nba, nfl] = await Promise.all([get("tennis.json"), get("nba.json"), get("data.json")]);
-  LEGS = [...(ten ? tennisLegs(ten) : []), ...(nba ? propLegs(nba, "nba") : []), ...(nfl ? propLegs(nfl, "nfl") : [])];
+  TEN = ten; OTHER = [...(nba ? propLegs(nba, "nba") : []), ...(nfl ? propLegs(nfl, "nfl") : [])];
+  rebuild();
   const times = [ten, nba, nfl].filter(Boolean).map(d => d.generated).sort();
   $("#updated").textContent = `${LEGS.length} qualifying legs · data updated ${times.length ? ago(times[0]) : "—"}`;
   render();
