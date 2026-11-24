@@ -31,11 +31,18 @@ def _slate(today, days=2):
     return out
 
 
+def starter_ids(side) -> set:
+    """Projected starting five: the five available players with the most projected minutes."""
+    avail = [p for p in side.players if p.p_play >= 0.5]
+    return {p.pid for p in sorted(avail, key=lambda p: -p.minutes)[:5]}
+
+
 def _side_json(side, injuries):
+    st = starter_ids(side)
     return {"abbr": side.abbr, "pts_mu": round(side.pts_mu, 2), "pace": round(side.pace, 1), "b2b": side.b2b,
             "notes": side.notes,
             "players": [{"pid": p.pid, "name": p.name, "pos": p.pos, "p_play": p.p_play, "status": p.status or "",
-                         "minutes": round(p.minutes, 1), "note": p.note,
+                         "minutes": round(p.minutes, 1), "note": p.note, "starter": p.pid in st,
                          "mean": {k: round(float(v), 2) for k, v in p.mean.items()},
                          "cv": {k: round(float(v), 3) for k, v in p.cv.items()},
                          "season_avg": p.season_avg, "l5": p.l5, "gp": p.gp} for p in side.players],
@@ -45,10 +52,12 @@ def _side_json(side, injuries):
 MILESTONES = {"pts": [10, 15, 20, 25, 30, 35], "reb": [4, 6, 8, 10, 12], "ast": [2, 4, 6, 8, 10], "fg3": [1, 2, 3, 4, 5]}
 
 
-def milestone_legs(res, min_p=0.55):
-    """For each player and stat: the highest Kalshi-style 'X+' line the model rates at least min_p."""
+def milestone_legs(res, min_p=0.55, only=None):
+    """Every Kalshi-style 'X+' line the model rates between min_p and 95% (starters only when `only` is given)."""
     legs = []
     for pid, r in res["players"].items():
+        if only is not None and pid not in only:
+            continue
         pl = r["played"]
         if pl.mean() < 0.9:   # skip questionable players for auto-picks
             continue
@@ -129,7 +138,7 @@ def cmd_export(args):
                                    "spread_home": float(-mg.mean()), "total": float((res["hp"] + res["ap"]).mean()),
                                    "home_pts": float(res["hp"].mean()), "away_pts": float(res["ap"].mean())}
                 item["pace"] = round(m.pace, 1)
-                item["legs"] = milestone_legs(res)
+                item["legs"] = milestone_legs(res, only=starter_ids(m.home) | starter_ids(m.away))
                 item["sides"] = {"home": _side_json(m.home, injuries.get(g.home.id, [])),
                                  "away": _side_json(m.away, injuries.get(g.away.id, []))}
             except Exception as e:  # keep the slate if one game fails

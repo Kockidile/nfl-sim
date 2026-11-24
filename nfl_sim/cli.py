@@ -236,11 +236,25 @@ def cmd_backtest(args):
         print(f"\nSaved {args.csv}")
 
 
+STARTER_SLOTS = {"QB": ("pass_yds", 1), "RB": ("rush_yds", 1), "WR": ("rec_yds", 3), "TE": ("rec_yds", 1)}
+
+
+def starter_ids(side) -> set:
+    """Projected starters: QB1, RB1, WR1-3 and TE1 among available players, ranked by projected volume."""
+    out = set()
+    for pos, (stat, n) in STARTER_SLOTS.items():
+        pool = [p for p in side.players if p.pos == pos and p.p_play >= 0.5]
+        out |= {p.pid for p in sorted(pool, key=lambda p: -float(p.mean.get(stat, 0)))[:n]}
+    return out
+
+
 def _side_json(side, injuries):
+    st = starter_ids(side)
     return {
         "abbr": side.abbr, "pts_mu": side.pts_mu, "exp_pass": side.exp_pass, "exp_rush": side.exp_rush,
         "notes": side.notes,
         "players": [{"pid": p.pid, "name": p.name, "pos": p.pos, "p_play": p.p_play, "status": p.status or "",
+                     "starter": p.pid in st,
                      "mean": {k: round(float(v), 2) for k, v in p.mean.items()},
                      "cv": {k: round(float(v), 3) for k, v in p.cv.items()},
                      "season_avg": {k: round(float(v), 1) for k, v in p.season_avg.items()}} for p in side.players],
@@ -252,9 +266,11 @@ NFL_MILESTONES = {"pass_yds": [150, 175, 200, 225, 250, 275, 300], "rush_yds": [
                   "rec_yds": [25, 40, 50, 60, 75, 100]}
 
 
-def _milestone_legs(res, min_p=0.55):
+def _milestone_legs(res, min_p=0.55, only=None):
     legs = []
     for pid, (p, team) in res.players.items():
+        if only is not None and pid not in only:
+            continue
         pl = res.played[pid]
         if pl.mean() < 0.9:
             continue
@@ -296,7 +312,7 @@ def cmd_export(args):
                                    "wind_mph": wx.wind_mph, "precip_prob": wx.precip_prob}
                 res = model.simulate(mu, n=20000, seed=1)
                 item["summary"] = model.summary(res)
-                item["legs"] = _milestone_legs(res)
+                item["legs"] = _milestone_legs(res, only=starter_ids(mu.home) | starter_ids(mu.away))
                 item["sides"] = {"home": _side_json(mu.home, injuries.get(g.home.id, [])),
                                  "away": _side_json(mu.away, injuries.get(g.away.id, []))}
             except Exception as e:  # keep the rest of the slate if one game fails

@@ -371,9 +371,9 @@ function viewGame(id){
   </div>`;
 
   for (const [side, abbr] of [[g.sides.away, A], [g.sides.home, H]]){
-    html += `<h2>${esc(abbr)} player props</h2><div class="card">`;
+    html += `<h2>${esc(abbr)} player props · starters</h2><div class="card">`;
     const rows = [];
-    for (const p of side.players){
+    for (const p of side.players.filter(p => p.starter !== false)){
       const P = r.players[p.pid];
       for (const st of STATS){
         if ((p.mean[st] || 0) < 8 && !(p.pos === "QB" && st === "pass_yds")) continue;

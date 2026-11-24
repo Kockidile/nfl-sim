@@ -333,8 +333,8 @@ function viewGame(id){
   <h2>Player props</h2>
   <div class="statchips">${["pts","reb","ast","fg3","pra","pr","pa","ra"].map(k => `<button data-propstat="${k}" class="${k===PROP_STAT?"on":""}">${SHORT[k]}</button>`).join("")}</div>`;
   for (const [side, abbr] of [[g.sides.away, A], [g.sides.home, H]]){
-    html += `<div class="card"><div style="font-weight:700;margin-bottom:4px">${esc(abbr)} · ${LABEL[PROP_STAT]}</div>`;
-    const rows = side.players.map(p => ({p, d: dist(r, p.pid, PROP_STAT)})).filter(x => x.d.n && x.d.med >= MIN_SHOW[PROP_STAT]).sort((a,b) => b.d.med - a.d.med);
+    html += `<div class="card"><div style="font-weight:700;margin-bottom:4px">${esc(abbr)} starters · ${LABEL[PROP_STAT]}</div>`;
+    const rows = side.players.filter(p => p.starter !== false).map(p => ({p, d: dist(r, p.pid, PROP_STAT)})).filter(x => x.d.n && x.d.med >= MIN_SHOW[PROP_STAT]).sort((a,b) => b.d.med - a.d.med);
     html += rows.map(({p, d}) => {
       const line = hookLine(d.med), pp = pPlay(p);
       const avg = COMBOS[PROP_STAT] ? COMBOS[PROP_STAT].reduce((a,k)=>a+p.season_avg[k],0).toFixed(1) : p.season_avg[PROP_STAT];
