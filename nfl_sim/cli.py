@@ -21,7 +21,15 @@ pd.set_option("display.max_rows", 200)
 def _week(args):
     season, week, stype = espn.current_week()
     season = args.season or season
-    week = args.week or week
+    if args.week:
+        return season, args.week, stype
+    # ESPN keeps showing last week until midweek: once every game in it is final, move on to the next week
+    try:
+        games = espn.get_week_games(season, week, stype)
+        if games and all(g.completed for g in games) and stype == 2 and week < 18:
+            week += 1
+    except Exception:  # noqa: BLE001
+        pass
     return season, week, stype
 
 
