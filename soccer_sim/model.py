@@ -112,6 +112,14 @@ def fit(matches: list[dict], asof: datetime | None = None, iters=60) -> Ratings:
             lg_dfn[l] = float(ga[mk].sum() / max(eg[mk].sum(), 1e-9))
         ld_vec = np.array([lg_dfn[l] for l in tl])
         df = (ga + k * ld_vec) / (eg + k)
+        # Domestic results only fix att*dfn within a league, not how strong the league is; pin each league's
+        # average attack = average defense so LEAGUE_OFFSET alone sets league strength (cup games then refine teams)
+        for l in lgs:
+            mk = tl == l
+            wl = n_eff[mk] + 1e-9
+            c = math.sqrt(math.exp((wl * np.log(df[mk])).sum() / wl.sum()) / math.exp((wl * np.log(at[mk])).sum() / wl.sum()))
+            at[mk] *= c; df[mk] /= c
+            lg_att[l] *= c; lg_dfn[l] /= c
         # keep the scale pinned: mean attack = 1 (weighted by games)
         s = float((at * n_eff).sum() / n_eff.sum())
         at /= s; base *= s
