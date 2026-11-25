@@ -3,18 +3,22 @@ name: Update data
 on:
   schedule:
     - cron: "23 * * * *"          # every hour (GitHub may start scheduled runs a few minutes late)
-  workflow_dispatch: {}           # "Run workflow" button for a manual refresh
+  workflow_dispatch:              # "Run workflow" button for a manual refresh
+    inputs:
+      chain:
+        description: "Keep the hourly chain going (set automatically)"
+        default: "false"
 
 permissions:
   contents: write
-
-concurrency:
-  group: update-data
-  cancel-in-progress: false
+  actions: write                # lets a run start the next one
 
 jobs:
   update:
     runs-on: ubuntu-latest
+    concurrency:
+      group: update-data
+      cancel-in-progress: false
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
@@ -55,3 +59,19 @@ jobs:
             sleep 5
           done
           exit 1
+
+  # GitHub's cron often skips runs, so each run also starts the next one about an hour later.
+  # Only one sleeper exists at a time (a newer one cancels the older), and a manual refresh doesn't start a new chain.
+  next:
+    needs: update
+    if: always() && (github.event_name == 'schedule' || inputs.chain == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    concurrency:
+      group: hourly-chain
+      cancel-in-progress: true
+    steps:
+      - run: sleep 3360
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run update-data.yml -R ${{ github.repository }} --ref main -f chain=true
