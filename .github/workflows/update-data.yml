@@ -1,11 +1,8 @@
-name: Update NFL data
+name: Update data
 
 on:
   schedule:
-    - cron: "17 */2 * * *"        # every 2 hours (tennis runs around the clock)
-    - cron: "47 15-23 * * 0"      # hourly on Sundays (US game day, UTC) for inactives
-    - cron: "47 22-23 * * 1,4"    # Monday & Thursday night games
-    - cron: "7 18-23,0-1 * * *"   # NBA: hourly through US afternoon/evening (injury news, tip-offs)
+    - cron: "23 * * * *"          # every hour (GitHub may start scheduled runs a few minutes late)
   workflow_dispatch: {}           # "Run workflow" button for a manual refresh
 
 permissions:
@@ -43,6 +40,9 @@ jobs:
       - name: Build tennis data
         continue-on-error: true
         run: python -m tennis_sim export --out docs/tennis.json
+      - name: Build soccer data
+        continue-on-error: true
+        run: python -m soccer_sim export --out docs/soccer.json
       - name: Commit
         run: |
           git config user.name "nfl-sim-bot"
