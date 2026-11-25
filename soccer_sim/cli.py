@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import data, model
 
+MARKET_WEIGHT = 0.5   # final chance = 50% model + 50% Kalshi's own price (where the market is two-sided)
 SEASON_START = {"usa.1": (1, 1), "bra.1": (1, 1), "mex.1": (7, 1)}   # everyone else: Jul 15
 
 
@@ -68,7 +69,9 @@ def _leg(kind, label, p, yes_pr, side="yes", line=None):
     q = (ask + bid) / 2 if bid > 0 else None
     if ask <= 0 or ask >= 0.99 or spread > 0.12 or q is None:
         return None
-    return {"kind": kind, "label": label, "p": round(p, 4), "ask": round(ask, 3), "q": round(q, 4),
+    pm = p
+    p = (1 - MARKET_WEIGHT) * pm + MARKET_WEIGHT * q
+    return {"kind": kind, "label": label, "p": round(p, 4), "p_model": round(pm, 4), "ask": round(ask, 3), "q": round(q, 4),
             "spread": round(spread, 3), "volume": yes_pr.get("volume", 0), "line": line, "side": side}
 
 
@@ -80,18 +83,20 @@ def cmd_export(args):
         bt = model.backtest(matches)
     except Exception as e:  # noqa: BLE001
         bt = {"error": str(e)}
+    sharp = min(max(bt.get("sharp", 1.0), 0.9), 1.3) if isinstance(bt, dict) else 1.0
     ctx = team_context(matches, now)
     fixtures = [m for m in matches if m["state"] == "pre" and now - timedelta(minutes=5) < _ts(m["date"]) < now + timedelta(hours=args.hours)]
     kal = data.load_kalshi(verbose=not args.quiet)
     link = data.match_kalshi(fixtures, kal)
     names = {v[0]: v[1] for v in data.LEAGUES.values()}
     out = {"sport": "soccer", "generated": now.isoformat(timespec="seconds"), "backtest": bt,
-           "model": {"base": round(R.base, 3), "home": round(R.home, 3), "half_life_days": model.HALF_LIFE_DAYS},
+           "model": {"base": round(R.base, 3), "home": round(R.home, 3), "half_life_days": model.HALF_LIFE_DAYS,
+                     "sharp": sharp, "market_weight": MARKET_WEIGHT},
            "matches": []}
     for f in sorted(fixtures, key=lambda m: m["date"]):
         h, a = f["home_id"], f["away_id"]
         lh, la = R.lam(h, a, f["neutral"], f["league"])
-        o = model.outcomes(lh, la)
+        o = model.outcomes(lh, la, sharp)
         ne = min(R.n_eff.get(h, 0), R.n_eff.get(a, 0))
         conf = "high" if ne >= 12 else "medium" if ne >= 6 else "low"
         item = {"id": f["id"], "league": names.get(f["league"], f["league"]), "slug": f["league"], "start": f["date"],
