@@ -139,7 +139,7 @@ const ord = n => n + (["th","st","nd","rd"][(n%100-20)%10] || ["th","st","nd","r
 const ICON = {nfl:"🏈", nba:"🏀", tennis:"🎾", soccer:"⚽"};
 const NAME = {nfl:"NFL", nba:"NBA", tennis:"Tennis", soccer:"Soccer"};
 const STAT = {pts:"points", reb:"rebounds", ast:"assists", fg3:"threes", pass_yds:"pass yds", rush_yds:"rush yds", rec_yds:"rec yds"};
-const WINDOW_H = 12, MIN_LEAD_MIN = 10, PROP_HAIRCUT = 0.95;
+const WINDOW_H = 12, MIN_LEAD_MIN = 10, PROP_HAIRCUT = 0.95, MIN_MULT = 1.05;   // legs paying under 1.05x add risk but almost no payout
 
 let LEGS = [], DATA = {}, SPORTS = store.get("bot.sports", {nfl:true, nba:true, tennis:true, soccer:true});
 let MODE = store.get("bot.mode", "balanced"), LOTTO_N = store.get("bot.lotto", 12);
@@ -239,10 +239,10 @@ function combine(legs){
   return {legs, p, mult, priced, ev: priced ? p*mult - 1 : null};
 }
 // greedy (or weighted-random when roll = true) build: one leg per game until the payout target / leg count is reached
-function build({minP, maxP = 0.97, target = Infinity, n = 30, key = rate}, roll = false){
-  const cand = LEGS.filter(L => SPORTS[L.sport] && L.p >= minP && L.p <= maxP);
+function build({minP, maxP = 0.92, target = Infinity, n = 30, key = rate}, roll = false){
+  const cand = LEGS.filter(L => SPORTS[L.sport] && L.p >= minP && L.p <= maxP && L.mult >= MIN_MULT);
   for (let tries = 0; tries < (roll ? 300 : 1); tries++){
-    const order = roll ? cand.map(L => ({L, k: Math.random() ** (1 / Math.max(key(L) - .4, .02))})).sort((a,b) => b.k - a.k).map(x => x.L)
+    const order = roll ? cand.map(L => ({L, k: Math.random() ** (1 / Math.exp(10 * (key(L) - .8)))})).sort((a,b) => b.k - a.k).map(x => x.L)
                        : cand.slice().sort((a,b) => key(b) - key(a));
     const used = new Set(), pick = []; let mult = 1;
     for (const L of order){
@@ -256,10 +256,13 @@ function build({minP, maxP = 0.97, target = Infinity, n = 30, key = rate}, roll 
   }
   return null;
 }
+// Each tier aims for a payout using legs of the right size: rank by rating, penalising legs whose
+// payout is far from target^(1/ideal legs) (a 1.05x leg barely moves a lotto; a 2x leg is too risky for Safe)
+const fit = (T, n0, w = 1.5) => L => rate(L) - w * Math.abs(Math.log(L.mult) - Math.log(T) / n0);
 const TIERS = {
-  safe:  {icon:"🟢", name:"Safe",   cls:"safe",  opt: () => ({minP:.75, target:1.8, n:5}),            note:"Most likely legs (75%+ each) to about 1.8×"},
-  med:   {icon:"🟡", name:"Medium", cls:"med",   opt: () => ({minP:.62, target:4, n:8}),              note:"Strong legs (62%+ each) to about 4×"},
-  lotto: {icon:"🔴", name:"Lotto",  cls:"lotto", opt: () => ({minP:.6, n:LOTTO_N, key: L => rate(L) + .15*clip(L.edge, -.05, .15)}), note:""}
+  safe:  {icon:"🟢", name:"Safe",   cls:"safe",  opt: () => ({minP:.75, maxP:.92, target:1.8, n:5, key: fit(1.8, 3)}), note:"Most likely legs (75–92% each) to about 1.8×"},
+  med:   {icon:"🟡", name:"Medium", cls:"med",   opt: () => ({minP:.62, maxP:.9, target:4, n:8, key: fit(4, 5)}),      note:"Strong legs (62–90% each) to about 4×"},
+  lotto: {icon:"🔴", name:"Lotto",  cls:"lotto", opt: () => ({minP:.6, maxP:.88, n:LOTTO_N, key: fit(Math.max(12, 1.32 ** LOTTO_N), LOTTO_N, 1.2)}), note:""}
 };
 
 // ------------------------------------------------------------------ views
@@ -270,7 +273,7 @@ function legRow(L){
 }
 function tierCard(k){
   const T = TIERS[k], P = ROLL[k] || build(T.opt());
-  const note = k === "lotto" ? `${LOTTO_N} of the most likely legs (60%+ each), value as a tiebreak` : T.note;
+  const note = k === "lotto" ? `${LOTTO_N} strong legs (60–88% each) sized for a big payout, value as a tiebreak` : T.note;
   if (!P) return `<div class="card tier ${T.cls}"><div class="hd">${T.icon} ${T.name}</div><div class="note">Not enough legs in the next ${WINDOW_H} hours for this one. Try Everything, or turn more sports on.</div></div>`;
   const txt = P.legs.map(L => `${ICON[L.sport]} ${L.title}`).join("\n");
   const short = k === "lotto" && P.legs.length < LOTTO_N ? ` · only ${P.legs.length} legs qualify right now` : "";
@@ -305,7 +308,7 @@ function render(){
     <button class="primary dice" id="roll">🎲 Roll a parlay</button>
   </div>
   <div id="rand">${RAND ? `<div class="card">${RAND.html}</div>` : ""}</div>`;
-  const top = inRange.slice().sort((a,b) => rate(b) - rate(a));
+  const top = inRange.filter(L => L.mult >= MIN_MULT).sort((a,b) => rate(b) - rate(a));
   html += `<h2>All legs in the next ${WINDOW_H}h (${top.length})</h2><div class="card">${top.slice(0, 60).map(legRow).join("") || `<div class="dim small">No legs start in the next ${WINDOW_H} hours with the current filters.</div>`}</div>
   <div class="foot">Only games starting in the next ${WINDOW_H} hours (from each sport's latest scan) are used, and nothing starting in the next ${MIN_LEAD_MIN} minutes. Data rescans every hour.<br>
   🎾⚽ Tennis and soccer legs use Kalshi's current ask, so payouts and EV are real until prices move. Soccer chances blend the model 50/50 with Kalshi's own price. 🏀🏈 Player props use projected starters only; their payout is an estimate (fair price minus about 5%), so check Kalshi's combo price. Each parlay uses one leg per game, and legs are treated as independent.<br>

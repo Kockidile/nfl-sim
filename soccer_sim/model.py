@@ -20,9 +20,9 @@ from .data import CUPS
 HALF_LIFE_DAYS = 150
 # League strength in log-goals relative to the Premier League (roughly UEFA-coefficient order). Only matters when
 # teams from different leagues meet (European cups); "other" = clubs from leagues we don't load (cup games only).
-LEAGUE_OFFSET = {"eng.1": 0.0, "esp.1": -0.12, "ita.1": -0.2, "ger.1": -0.2, "fra.1": -0.35, "por.1": -0.5,
-                 "ned.1": -0.55, "bel.1": -0.7, "tur.1": -0.7, "eng.2": -0.7, "sco.1": -0.9, "bra.1": -0.55,
-                 "usa.1": -0.85, "mex.1": -0.85, "other": -0.95}
+LEAGUE_OFFSET = {"eng.1": 0.0, "esp.1": -0.1, "ita.1": -0.2, "ger.1": -0.2, "fra.1": -0.4, "por.1": -0.75,
+                 "ned.1": -0.8, "bel.1": -1.0, "tur.1": -1.0, "eng.2": -0.95, "sco.1": -1.2, "bra.1": -0.7,
+                 "usa.1": -1.1, "mex.1": -1.1, "other": -1.2}
 PRIOR_MATCHES = 6.0
 RHO = -0.07          # Dixon-Coles: slightly more 0-0 / 1-1 than independent Poisson
 MAX_GOALS = 10

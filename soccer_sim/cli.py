@@ -8,7 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 from . import data, model
 
-MARKET_WEIGHT = 0.5   # final chance = 50% model + 50% Kalshi's own price (where the market is two-sided)
+MARKET_WEIGHT = 0.5       # final chance = 50% model + 50% Kalshi's own price (where the market is two-sided)
+MARKET_WEIGHT_CUP = 0.7   # European cups: teams from different leagues, so the model is less sure; lean on the market
 SEASON_START = {"usa.1": (1, 1), "bra.1": (1, 1), "mex.1": (7, 1)}   # everyone else: Jul 15
 
 
@@ -56,7 +57,7 @@ def _mid(pr):
     return (a + b) / 2 if b and a > b else None
 
 
-def _leg(kind, label, p, yes_pr, side="yes", line=None):
+def _leg(kind, label, p, yes_pr, side="yes", line=None, mw=MARKET_WEIGHT):
     """A buyable Kalshi position with the model's chance. side='no' buys the NO contract."""
     if not yes_pr or yes_pr.get("ask") is None:
         return None
@@ -70,7 +71,7 @@ def _leg(kind, label, p, yes_pr, side="yes", line=None):
     if ask <= 0 or ask >= 0.99 or spread > 0.12 or q is None:
         return None
     pm = p
-    p = (1 - MARKET_WEIGHT) * pm + MARKET_WEIGHT * q
+    p = (1 - mw) * pm + mw * q
     return {"kind": kind, "label": label, "p": round(p, 4), "p_model": round(pm, 4), "ask": round(ask, 3), "q": round(q, 4),
             "spread": round(spread, 3), "volume": yes_pr.get("volume", 0), "line": line, "side": side}
 
@@ -91,7 +92,7 @@ def cmd_export(args):
     names = {v[0]: v[1] for v in data.LEAGUES.values()}
     out = {"sport": "soccer", "generated": now.isoformat(timespec="seconds"), "backtest": bt,
            "model": {"base": round(R.base, 3), "home": round(R.home, 3), "half_life_days": model.HALF_LIFE_DAYS,
-                     "sharp": sharp, "market_weight": MARKET_WEIGHT},
+                     "sharp": sharp, "market_weight": MARKET_WEIGHT, "market_weight_cup": MARKET_WEIGHT_CUP},
            "matches": []}
     for f in sorted(fixtures, key=lambda m: m["date"]):
         h, a = f["home_id"], f["away_id"]
@@ -116,21 +117,22 @@ def cmd_export(args):
         if f["id"] in link:
             e, kh, ka, sc = link[f["id"]]
             item["kalshi"] = {"event": e["suffix"], "match_score": round(sc, 2)}
+            mw = MARKET_WEIGHT_CUP if f["league"] in data.CUPS else MARKET_WEIGHT
             legs = [
-                _leg("win", f"{f['home']} to win", o["home"], e["win"].get(kh)),
-                _leg("win", f"{f['away']} to win", o["away"], e["win"].get(ka)),
-                _leg("dc", f"{f['home']} win or draw", o["home"] + o["draw"], e["win"].get(ka), "no"),
-                _leg("dc", f"{f['away']} win or draw", o["away"] + o["draw"], e["win"].get(kh), "no"),
+                _leg("win", f"{f['home']} to win", o["home"], e["win"].get(kh), mw=mw),
+                _leg("win", f"{f['away']} to win", o["away"], e["win"].get(ka), mw=mw),
+                _leg("dc", f"{f['home']} win or draw", o["home"] + o["draw"], e["win"].get(ka), "no", mw=mw),
+                _leg("dc", f"{f['away']} win or draw", o["away"] + o["draw"], e["win"].get(kh), "no", mw=mw),
             ]
             for x, pr in sorted(e["totals"].items()):
                 po = o["over"].get(x)
                 if po is None:
                     continue
-                legs.append(_leg("over", f"Over {x} goals", po, pr, line=x))
-                legs.append(_leg("under", f"Under {x} goals", 1 - po, pr, "no", line=x))
+                legs.append(_leg("over", f"Over {x} goals", po, pr, line=x, mw=mw))
+                legs.append(_leg("under", f"Under {x} goals", 1 - po, pr, "no", line=x, mw=mw))
             if e.get("btts"):
-                legs.append(_leg("btts", "Both teams score", o["btts"], e["btts"]))
-                legs.append(_leg("btts_no", "Not both teams score", 1 - o["btts"], e["btts"], "no"))
+                legs.append(_leg("btts", "Both teams score", o["btts"], e["btts"], mw=mw))
+                legs.append(_leg("btts_no", "Not both teams score", 1 - o["btts"], e["btts"], "no", mw=mw))
             item["legs"] = [L for L in legs if L]
             mk = {k: _mid(e["win"].get(n)) for k, n in (("home", kh), ("away", ka))}
             mk["draw"] = _mid(e.get("tie"))
