@@ -110,6 +110,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .scan{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .scan span{font-size:11px;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
 .scan span.old{color:var(--warn);border-color:#5b4a1f}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 12px}
+.tabs button{padding:10px;font-weight:700}
+.tabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.dog .nm{font-weight:800;font-size:16px}
+.bar{height:6px;border-radius:3px;background:var(--card2);overflow:hidden;margin:8px 0 6px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#d9a520,#e0533d)}
+.sig{font-size:13px;line-height:1.45;margin:2px 0}
+.sig.w{color:var(--warn)}
 .foot{font-size:12px;color:var(--dim);margin:0 4px 24px;line-height:1.5}
 .foot a{color:var(--blue)}
 </style>
@@ -265,6 +273,68 @@ const TIERS = {
   lotto: {icon:"🔴", name:"Lotto",  cls:"lotto", opt: () => ({minP:.6, maxP:.88, n:LOTTO_N, key: fit(Math.max(12, 1.32 ** LOTTO_N), LOTTO_N, 1.2)}), note:""}
 };
 
+// ------------------------------------------------------------------ tennis underdogs
+let TAB = store.get("bot.tab", "parlays");
+const wpct = r => { const m = /^(\d+)-(\d+)/.exec(r || ""); if (!m) return null; const w = +m[1], l = +m[2]; return w + l >= 4 ? w / (w + l) : null; };
+function dogs(){
+  const d = DATA.tennis, F = MODES[MODE], out = [];
+  if (!d) return out;
+  for (const m of d.matches || []){
+    if (!m.model || !Number.isFinite(m.market?.p_a) || m.live || !F.conf.includes(m.confidence) || !inWindow(m.start, d.generated)) continue;
+    const vol = (m.market.a.volume||0) + (m.market.b.volume||0);
+    if (vol < F.vol) continue;
+    for (const i of [0,1]){
+      const me = i ? m.b : m.a, op = i ? m.a : m.b, mq = i ? m.market.b : m.market.a;
+      const q = i ? 1 - m.market.p_a : m.market.p_a, p = i ? 1 - m.model.p_a : m.model.p_a, ask = mq.ask;
+      if (!ask || q >= 0.5 || ask > 0.5 || ask < 0.15 || p < 0.33) continue;   // real underdog on Kalshi, not a lottery ticket
+      const edge = p - q;
+      if (edge < -0.03 || edge > F.maxEdge + 0.05 || Math.min(me.matches||0, op.matches||0) < F.games) continue;
+      const sig = [], warn = [];
+      const sv = me.serve || {}, so = op.serve || {};
+      if (edge >= 0.03) sig.push(`Model gives ${pct(p)}, Kalshi only ${pct(q)}: <b>+${(edge*100).toFixed(0)} pts of value</b>`);
+      const sm = wpct(me.surface_record), so2 = wpct(op.surface_record);
+      if (sm != null && so2 != null && sm - so2 >= 0.08) sig.push(`Better on ${m.surface.toLowerCase()}: ${me.surface_record} vs ${op.surface_record}`);
+      const fm = wpct(me.last10), fo = wpct(op.last10);
+      if (fm != null && fo != null && fm - fo >= 0.1) sig.push(`Hotter form: ${me.last10} vs ${op.last10} in the last 10`);
+      if (sv.brk && so.brk && sv.brk - so.brk >= 0.04) sig.push(`Breaks serve more: ${pct(sv.brk)} vs ${pct(so.brk)}`);
+      if (sv.hold && so.hold && sv.hold - so.hold >= 0.03) sig.push(`Holds serve more: ${pct(sv.hold)} vs ${pct(so.hold)}`);
+      if ((op.played_7d||0) >= 4 && (me.played_7d||0) <= (op.played_7d||0) - 2) sig.push(`Favorite may be tired: ${op.played_7d} matches in 7 days vs ${me.played_7d||0}`);
+      const h = /^(\d+)-(\d+)$/.exec(i ? (m.h2h||"").split("-").reverse().join("-") : (m.h2h||""));
+      if (h && +h[1] > +h[2]) sig.push(`Leads head-to-head ${h[1]}-${h[2]}`);
+      if (me.rank && op.rank && me.rank < op.rank) sig.push(`Actually ranked higher: ${me.rank} vs ${op.rank}`);
+      else if (me.rank && op.rank && me.rank / op.rank <= 1.5) sig.push(`Close in rank: ${me.rank} vs ${op.rank}`);
+      if ((me.played_7d||0) >= 5) warn.push(`Has played ${me.played_7d} matches in 7 days`);
+      if ((me.days_rest||0) > 45) warn.push(`${me.days_rest} days since last match`);
+      if (m.confidence === "low") warn.push("Thin data on one of the players");
+      if (edge > 0.18) warn.push("Big gap vs Kalshi's price: the market may know something the stats don't (injury, news)");
+      if (sm != null && so2 != null && so2 - sm >= 0.15) warn.push(`Worse on ${m.surface.toLowerCase()}: ${me.surface_record} vs ${op.surface_record}`);
+      const rating = Math.round(clip(100 * (p + 0.6 * Math.max(edge, 0) + 0.025 * sig.length - 0.03 * warn.length), 0, 99));
+      out.push({m, me, op, p, q, ask, edge, mult: 1/ask, sig, warn, rating, vol,
+        leg: {sport:"tennis", game:"t"+m.event, start:m.start, title:`${me.name} to win (upset)`, sub:`vs ${op.name} · ${m.level} · ${m.surface}`, why:"", p, mult:1/ask, priced:true, edge}});
+    }
+  }
+  return out.sort((a,b) => b.rating - a.rating);
+}
+function renderDogs(){
+  const L = dogs();
+  let html = `<div class="card"><div style="font-weight:800">🐶 Tennis upset watch</div>
+    <div class="s small dim">Players Kalshi prices as underdogs (15–50¢) in the next ${WINDOW_H} hours, ranked by upset rating: the model's chance of the upset, plus price value and the signals below. Uses the ${esc(MODES[MODE].label)} filter from the Parlays tab.</div></div>`;
+  if (!L.length) return html + `<div class="empty">No underdogs with real upset potential in the next ${WINDOW_H} hours. Try the Everything filter on the Parlays tab, or check back after the next hourly scan.</div>`;
+  const combo = (n, label) => { if (L.length < n) return ""; const P = combine(L.slice(0, n).map(x => x.leg));
+    return `<div class="leg"><div class="ic">🐶</div><div><div class="t">${label}</div><div class="s">${esc(L.slice(0, n).map(x => x.me.name).join(" + "))}</div></div>
+      <div class="r"><b class="num">${P.mult.toFixed(2)}×</b><div class="s num">hits ${pct(P.p)} · EV ${P.ev >= 0 ? "+" : ""}${(P.ev*100).toFixed(0)}%</div></div></div>`; };
+  html += `<div class="card"><div style="font-weight:700">Upset combos (top-rated dogs)</div>${combo(2, "Upset double")}${combo(3, "Upset treble")}</div>`;
+  html += L.slice(0, 25).map(x => `<div class="card dog">
+    <div class="pc-head"><div><div class="nm">${esc(x.me.name)}</div><div class="s small dim">over ${esc(x.op.name)} · ${esc(x.m.tourney || x.m.level)} · ${esc(x.m.surface)} · ${esc(when(x.m.start))}</div></div>
+      <div style="text-align:right"><div class="mult num">${x.mult.toFixed(2)}×</div><div class="tiny dim">${Math.round(x.ask*100)}¢ on Kalshi</div></div></div>
+    <div class="bar"><i style="width:${x.rating}%"></i></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:6px"><span class="tag">Upset rating ${x.rating}</span><span class="tag">Model ${pct(x.p)}</span><span class="tag ${x.edge >= .02 ? "v" : ""}">Kalshi ${pct(x.q)}</span>${x.me.rank ? `<span class="tag">Rank ${x.me.rank} vs ${x.op.rank || "—"}</span>` : ""}</div>
+    ${x.sig.map(t => `<div class="sig">✅ ${t}</div>`).join("")}${x.warn.map(t => `<div class="sig w">⚠️ ${esc(t)}</div>`).join("")}
+    ${!x.sig.length ? `<div class="sig dim">Close match on paper: the value comes from the price, not a clear stat edge</div>` : ""}
+  </div>`).join("");
+  return html + `<div class="foot">Underdogs win less than half the time by definition, so even the best ones lose often. Bet them as singles or small combos, not long parlays. The model's backtest picks about 2 of 3 winners overall.</div>`;
+}
+
 // ------------------------------------------------------------------ views
 function legRow(L){
   return `<div class="leg"><div class="ic">${ICON[L.sport]}</div>
@@ -285,9 +355,11 @@ function tierCard(k){
     <div class="btns"><button data-reroll="${k}">🎲 Re-roll</button><button data-copy="${esc(txt)}">Copy legs</button></div></div>`;
 }
 function render(){
+  const tabs = `<div class="tabs"><button data-tab="parlays" class="${TAB==="parlays" ? "on" : ""}">⭐ Parlays</button><button data-tab="dogs" class="${TAB==="dogs" ? "on" : ""}">🐶 Tennis underdogs</button></div>`;
+  if (TAB === "dogs"){ $("#app").innerHTML = tabs + renderDogs(); return; }
   const inRange = LEGS.filter(L => SPORTS[L.sport]);
   const chips = ["nfl","nba","tennis","soccer"].map(s => `<button data-sport="${s}" class="${SPORTS[s] ? "on" : ""}">${ICON[s]} ${NAME[s]} <span class="dim">${LEGS.filter(L => L.sport===s).length}</span></button>`).join("");
-  let html = `<div class="chips">${chips}</div>`;
+  let html = tabs + `<div class="chips">${chips}</div>`;
   html += ["safe","med","lotto"].map(tierCard).join("");
   html += `<div class="card">
     <div style="font-weight:700">Settings</div>
@@ -326,8 +398,9 @@ function rollCustom(){
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-sport],[data-mode],[data-reroll],#roll,#roll2,#reload,[data-copy]"); if (!t) return;
-  if (t.dataset.mode){ MODE = t.dataset.mode; store.set("bot.mode", MODE); rebuild(); ROLL = {}; RAND = null; render(); }
+  const t = e.target.closest("[data-tab],[data-sport],[data-mode],[data-reroll],#roll,#roll2,#reload,[data-copy]"); if (!t) return;
+  if (t.dataset.tab){ TAB = t.dataset.tab; store.set("bot.tab", TAB); render(); window.scrollTo(0, 0); }
+  else if (t.dataset.mode){ MODE = t.dataset.mode; store.set("bot.mode", MODE); rebuild(); ROLL = {}; RAND = null; render(); }
   else if (t.dataset.sport){ SPORTS[t.dataset.sport] = !SPORTS[t.dataset.sport]; store.set("bot.sports", SPORTS); ROLL = {}; RAND = null; render(); }
   else if (t.dataset.reroll){ const k = t.dataset.reroll; const P = build(TIERS[k].opt(), true); if (P){ ROLL[k] = P; render(); } else toast("No other combo fits"); }
   else if (t.id === "roll" || t.id === "roll2"){ RAND = rollCustom(); if (!RAND) toast("No combo hits that target, so try a wider chance range"); render(); document.getElementById("rand").scrollIntoView({behavior:"smooth", block:"start"}); }
