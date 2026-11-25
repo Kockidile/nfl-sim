@@ -1,19 +1,20 @@
-import requests, json, time
+import requests, json
 K = "https://api.elections.kalshi.com/trade-api/v2"
 s = requests.Session()
-for t in ["KXEPLGAME", "KXEPLTOTAL", "KXUCLGAME", "KXSERIEAGAME", "KXLALIGAGAME"]:
-    j = s.get(f"{K}/markets", params={"series_ticker": t, "status": "open", "limit": 200}, timeout=60).json()
-    ms = j.get("markets") or []
-    print("\n== MK", t, "open markets", len(ms))
+ser = s.get(f"{K}/series", params={"category": "Sports"}, timeout=60).json().get("series") or []
+tk = {x["ticker"] for x in ser}
+for lg in ["EPL","LALIGA","SERIEA","BUNDESLIGA","LIGUE1","UCL","UEL","UECL","MLS","EREDIVISIE","LIGAPORTUGAL","EFLCHAMPIONSHIP","SCOTTISHPREM","LIGAMX","BRASILEIRO","SUPERLIG","BELGIANPL"]:
+    print("HAS", lg, [suf for suf in ["GAME","TOTAL","BTTS","SPREAD"] if f"KX{lg}{suf}" in tk])
+for t in ["KXEPLGAME", "KXEPLTOTAL", "KXEPLBTTS"]:
+    ms = s.get(f"{K}/markets", params={"series_ticker": t, "status": "open", "limit": 200}, timeout=60).json().get("markets") or []
+    print("MK", t, len(ms))
     for m in ms[:7]:
-        print("   M", m.get("ticker"), "|", m.get("event_ticker"), "|", m.get("title"), "|", m.get("yes_sub_title"), "|", m.get("yes_bid_dollars"), m.get("yes_ask_dollars"), m.get("volume_fp"), "|", m.get("occurrence_datetime"), m.get("expected_expiration_time"), m.get("close_time"), "|", m.get("floor_strike"), m.get("strike_type"), "|", (m.get("rules_primary") or "")[:260])
-    j = s.get(f"{K}/events", params={"series_ticker": t, "limit": 5}, timeout=60).json()
-    print("   EVENTS(any status)", [(e.get("event_ticker"), e.get("sub_title")) for e in (j.get("events") or [])[:5]])
+        print("MM", json.dumps({k: m.get(k) for k in ["ticker","event_ticker","title","yes_sub_title","no_sub_title","yes_bid_dollars","yes_ask_dollars","volume_fp","occurrence_datetime","expected_expiration_time","floor_strike","strike_type","custom_strike"]}))
+    if ms: print("RULE", (ms[0].get("rules_primary") or "")[:400])
 E = "https://site.api.espn.com/apis/site/v2/sports/soccer"
-for lg in ["eng.1", "uefa.champions", "ita.1"]:
-    for params in ({"dates": "20261122"}, {"dates": "20261101-20261124"}, {}):
-        r = s.get(f"{E}/{lg}/scoreboard", params=params, timeout=60)
-        ev = r.json().get("events", []) if r.ok else []
-        c = ev[0]["competitions"][0] if ev else {}
-        print("ESPN", lg, params, r.status_code, len(ev), ev[0]["name"] if ev else r.text[:120], ev[0]["date"] if ev else "", [(x["team"]["abbreviation"], x.get("score"), x.get("homeAway")) for x in c.get("competitors", [])], c.get("status", {}).get("type", {}).get("name"))
-r = s.get("https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings", timeout=60); print("STAND", r.status_code, r.text[:200])
+for lg in ["eng.1", "uefa.champions"]:
+    for d in ["20261122", "20261125", "20261126"]:
+        r = s.get(f"{E}/{lg}/scoreboard", params={"dates": d}, timeout=60)
+        for ev in (r.json().get("events", []) if r.ok else [])[:2]:
+            c = ev["competitions"][0]
+            print("ESPN", lg, d, ev["id"], ev["name"], ev["date"], c["status"]["type"]["name"], [(x["team"]["displayName"], x["team"]["abbreviation"], x.get("score"), x.get("homeAway")) for x in c["competitors"]])
