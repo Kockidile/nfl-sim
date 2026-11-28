@@ -229,7 +229,7 @@ function soccerLegs(d){
         why.push(`${m.home_abbr} ${H.gf10 ?? "?"}/${H.ga10 ?? "?"} · ${m.away_abbr} ${A.gf10 ?? "?"}/${A.ga10 ?? "?"} goals for/against`);
       }
       why.push(`model ${pct(L.p_model)} vs Kalshi ${pct(L.q)}`);
-      const title = L.kind === "win" || L.kind === "dc" ? L.label : `${L.label} · ${m.home_abbr || m.home} v ${m.away_abbr || m.away}`;
+      const title = L.kind === "win" || L.kind === "dc" ? L.label : `${L.label} · ${m.home} vs ${m.away}`;
       out.push({sport:"soccer", game:"s"+m.id, start:m.start, title, sub:`${m.home} vs ${m.away} · ${m.league}`,
         why: why.join(" · "), p: L.p, mult: 1/L.ask, priced:true, edge, bonus: m.confidence === "high" ? .01 : 0});
     }
