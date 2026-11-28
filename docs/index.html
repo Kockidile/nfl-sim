@@ -125,7 +125,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 <body>
 <header>
   <div class="row between">
-    <h1>Parlay Bot <span class="wk">NEXT 12H</span></h1>
+    <h1>Parlay Bot <span class="wk">NEXT 6H</span></h1>
     <button class="ghost" id="reload" style="padding:6px 10px;font-size:13px">↻</button>
   </div>
   <div class="sub" id="updated">Loading data…</div>
@@ -147,7 +147,7 @@ const ord = n => n + (["th","st","nd","rd"][(n%100-20)%10] || ["th","st","nd","r
 const ICON = {nfl:"🏈", nba:"🏀", tennis:"🎾", soccer:"⚽"};
 const NAME = {nfl:"NFL", nba:"NBA", tennis:"Tennis", soccer:"Soccer"};
 const STAT = {pts:"points", reb:"rebounds", ast:"assists", fg3:"threes", pass_yds:"pass yds", rush_yds:"rush yds", rec_yds:"rec yds"};
-const WINDOW_H = 12, MIN_LEAD_MIN = 10, PROP_HAIRCUT = 0.95, MIN_MULT = 1.05;   // legs paying under 1.05x add risk but almost no payout
+const WINDOW_H = 6, MIN_LEAD_MIN = 10, PROP_HAIRCUT = 0.95, MIN_MULT = 1.05;   // legs paying under 1.05x add risk but almost no payout
 
 let LEGS = [], DATA = {}, SPORTS = store.get("bot.sports", {nfl:true, nba:true, tennis:true, soccer:true});
 let MODE = store.get("bot.mode", "balanced"), LOTTO_N = store.get("bot.lotto", 12);
