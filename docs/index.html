@@ -118,6 +118,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#d9a520,#e0533d)}
 .sig{font-size:13px;line-height:1.45;margin:2px 0}
 .sig.w{color:var(--warn)}
+.tier.snow{border-color:#2a4a7a}
+.prog{height:10px;border-radius:5px;background:var(--card2);overflow:hidden;margin:8px 0 4px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#22c55e)}
+.steps{display:flex;gap:4px;margin:6px 0}
+.steps span{flex:1;text-align:center;font-size:11px;padding:4px 0;border-radius:6px;background:var(--card2);color:var(--dim)}
+.steps span.done{background:#1f5a3a;color:#fff}.steps span.now{background:#2a4a7a;color:#fff;font-weight:700}
+.snowin{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.snowin input{width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:15px}
 .foot{font-size:12px;color:var(--dim);margin:0 4px 24px;line-height:1.5}
 .foot a{color:var(--blue)}
 </style>
@@ -273,6 +281,53 @@ const TIERS = {
   lotto: {icon:"🔴", name:"Lotto",  cls:"lotto", opt: () => ({minP:.6, maxP:.88, n:LOTTO_N, key: fit(Math.max(12, 1.32 ** LOTTO_N), LOTTO_N, 1.2)}), note:""}
 };
 
+// ------------------------------------------------------------------ 2x snowball tracker
+let SNOW = store.get("bot.snow", {start: 20, goal: 1280, bank: 20, locked: null, history: [], confirm: false});
+const saveSnow = () => store.set("bot.snow", SNOW);
+const money = x => "$" + (x >= 100 ? x.toFixed(0) : x.toFixed(2));
+// 2x ticket: 70-92% legs sized for ~2x in 2-4 legs, earlier games first so it settles sooner
+function snowTicket(roll = false){
+  const soon = L => (new Date(L.start) - Date.now()) / 3600e3;
+  return build({minP:.7, maxP:.92, target:2, n:5, key: L => fit(2, 3)(L) - 0.01 * soon(L)}, roll);
+}
+function snowCard(){
+  const S = SNOW, need = Math.max(0, Math.ceil(Math.log(S.goal / S.bank) / Math.log(2) - 1e-9));
+  const total = Math.max(1, Math.round(Math.log(S.goal / S.start) / Math.log(2)));
+  const done = clip(Math.round(Math.log(S.bank / S.start) / Math.log(2)), 0, total);
+  const prog = clip(Math.log(S.bank / S.start) / Math.log(S.goal / S.start), 0, 1);
+  const steps = Array.from({length: total}, (_, i) => `<span class="${i < done ? "done" : i === done ? "now" : ""}">${money(S.start * 2 ** (i + 1))}</span>`).join("");
+  const wins = S.history.filter(h => h.won).length, runs = S.history.filter(h => !h.won).length;
+  let html = `<div class="card tier snow">
+    <div class="pc-head"><div><div class="hd">🎯 2× Snowball</div><div class="s small dim">${money(S.start)} → ${money(S.goal)} · ${need ? `${need} more win${need > 1 ? "s" : ""} needed` : "Goal reached! 🎉"}</div></div>
+      <div style="text-align:right"><div class="mult num">${money(S.bank)}</div><div class="tiny dim">current bankroll</div></div></div>
+    <div class="prog"><i style="width:${(prog*100).toFixed(1)}%"></i></div>
+    <div class="steps">${steps}</div>
+    <div class="s small dim">Chance of the rest at ~55% per ticket: ${need ? pct(0.55 ** need, need > 3 ? 1 : 0) : "—"} · Tickets won so far: ${wins}${runs ? ` · Restarts: ${runs}` : ""}</div>`;
+  if (S.locked){
+    const T = S.locked;
+    html += `<div class="lbl"><span><b>📌 Your locked ticket</b> · stake ${money(S.bank)} → ${money(S.bank * T.mult)}</span><b class="num">${T.mult.toFixed(2)}×</b></div>
+      <div class="s small dim">Model hit chance ${pct(T.p)} · locked ${esc(ago(T.at))}</div>
+      ${T.legs.map(legRow).join("")}
+      <div class="btns"><button data-snow="won" class="primary">✅ It hit</button><button data-snow="lost">${S.confirm ? "Tap again: restart at " + money(S.start) : "❌ It lost"}</button></div>
+      <div class="btns" style="grid-template-columns:1fr"><button data-snow="unlock" class="ghost">Unlock (I didn't place it)</button></div>`;
+  } else if (need){
+    const P = ROLL.snow || snowTicket();
+    if (!P) html += `<div class="note" style="margin-top:8px">No 2× ticket fits right now (it needs a few 70–92% legs in the next ${WINDOW_H} hours). Check back after the next hourly scan, or try the Everything filter.</div>`;
+    else {
+      ROLL.snow = P;
+      html += `<div class="lbl"><span><b>Next ticket</b> · stake ${money(S.bank)} → ${money(S.bank * P.mult)}</span><b class="num">${P.mult.toFixed(2)}×</b></div>
+        <div class="row" style="gap:6px;margin:4px 0 2px;flex-wrap:wrap"><span class="tag">Model hit chance ${pct(P.p)}</span>${P.priced ? `<span class="tag ${P.ev >= 0 ? "v" : ""}">EV ${P.ev >= 0 ? "+" : ""}${(P.ev*100).toFixed(0)}%</span>` : `<span class="tag">Includes props: check Kalshi's combo price</span>`}<span class="tag">Last leg starts ${esc(when(P.legs.map(L => L.start).sort().pop()))}</span></div>
+        ${P.legs.map(legRow).join("")}
+        <div class="btns"><button data-snow="lock" class="primary">📌 I placed this</button><button data-snow="reroll">🎲 Re-roll</button></div>
+        <div class="btns" style="grid-template-columns:1fr"><button data-copy="${esc(P.legs.map(L => `${ICON[L.sport]} ${L.title}`).join("\n"))}">Copy legs</button></div>`;
+    }
+  } else html += `<div class="btns" style="grid-template-columns:1fr"><button data-snow="reset" class="primary">Start a new snowball</button></div>`;
+  html += `<details style="margin-top:8px"><summary class="s small dim">Snowball settings</summary>
+    <div class="snowin"><label class="s small">Start $<input id="snowstart" type="number" min="1" step="1" value="${S.start}"></label><label class="s small">Goal $<input id="snowgoal" type="number" min="2" step="1" value="${S.goal}"></label></div>
+    <div class="btns" style="grid-template-columns:1fr"><button data-snow="reset">Reset bankroll to start</button></div></details></div>`;
+  return html;
+}
+
 // ------------------------------------------------------------------ tennis underdogs
 let TAB = store.get("bot.tab", "parlays");
 const wpct = r => { const m = /^(\d+)-(\d+)/.exec(r || ""); if (!m) return null; const w = +m[1], l = +m[2]; return w + l >= 4 ? w / (w + l) : null; };
@@ -360,7 +415,7 @@ function render(){
   const inRange = LEGS.filter(L => SPORTS[L.sport]);
   const chips = ["nfl","nba","tennis","soccer"].map(s => `<button data-sport="${s}" class="${SPORTS[s] ? "on" : ""}">${ICON[s]} ${NAME[s]} <span class="dim">${LEGS.filter(L => L.sport===s).length}</span></button>`).join("");
   let html = tabs + `<div class="chips">${chips}</div>`;
-  html += ["safe","med","lotto"].map(tierCard).join("");
+  html += snowCard() + ["safe","med","lotto"].map(tierCard).join("");
   html += `<div class="card">
     <div style="font-weight:700">Settings</div>
     <div class="lbl"><span>Lotto legs</span><b class="num" id="lv">${LOTTO_N}</b></div>
@@ -398,8 +453,19 @@ function rollCustom(){
 }
 
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-tab],[data-sport],[data-mode],[data-reroll],#roll,#roll2,#reload,[data-copy]"); if (!t) return;
-  if (t.dataset.tab){ TAB = t.dataset.tab; store.set("bot.tab", TAB); render(); window.scrollTo(0, 0); }
+  const t = e.target.closest("[data-snow],[data-tab],[data-sport],[data-mode],[data-reroll],#roll,#roll2,#reload,[data-copy]"); if (!t) return;
+  if (t.dataset.snow){
+    const a = t.dataset.snow, S = SNOW;
+    if (a !== "lost") S.confirm = false;
+    if (a === "lock" && ROLL.snow){ const P = ROLL.snow; S.locked = {legs: P.legs.map(L => ({...L})), mult: P.mult, p: P.p, at: new Date().toISOString()}; delete ROLL.snow; toast("Locked. Tap ✅ or ❌ when it settles"); }
+    else if (a === "reroll"){ const P = snowTicket(true); if (P){ ROLL.snow = P; } else toast("No other 2× combo fits"); }
+    else if (a === "won" && S.locked){ S.bank = Math.round(S.bank * S.locked.mult * 100) / 100; S.history.push({won: true, mult: S.locked.mult, bank: S.bank, at: new Date().toISOString()}); S.locked = null; toast(S.bank >= S.goal ? "🎉 Goal reached!" : `Nice! Bankroll ${money(S.bank)}`); }
+    else if (a === "lost" && S.locked){ if (!S.confirm){ S.confirm = true; } else { S.history.push({won: false, mult: S.locked.mult, bank: 0, at: new Date().toISOString()}); S.bank = S.start; S.locked = null; S.confirm = false; toast(`Restarting at ${money(S.start)}`); } }
+    else if (a === "unlock"){ S.locked = null; }
+    else if (a === "reset"){ S.bank = S.start; S.locked = null; }
+    saveSnow(); render();
+  }
+  else if (t.dataset.tab){ TAB = t.dataset.tab; store.set("bot.tab", TAB); render(); window.scrollTo(0, 0); }
   else if (t.dataset.mode){ MODE = t.dataset.mode; store.set("bot.mode", MODE); rebuild(); ROLL = {}; RAND = null; render(); }
   else if (t.dataset.sport){ SPORTS[t.dataset.sport] = !SPORTS[t.dataset.sport]; store.set("bot.sports", SPORTS); ROLL = {}; RAND = null; render(); }
   else if (t.dataset.reroll){ const k = t.dataset.reroll; const P = build(TIERS[k].opt(), true); if (P){ ROLL[k] = P; render(); } else toast("No other combo fits"); }
@@ -413,7 +479,12 @@ document.addEventListener("input", e => {
   if (e.target.id === "minp"){ MINP = Math.min(Number(e.target.value), MAXP - .02); store.set("picks.min2", MINP); $("#mv").textContent = pct(MINP); }
   if (e.target.id === "maxp"){ MAXP = Math.max(Number(e.target.value), MINP + .02); store.set("picks.max2", MAXP); $("#xv").textContent = pct(MAXP); }
 });
-document.addEventListener("change", e => { if (["lotto","minp","maxp","target"].includes(e.target.id)){ if (e.target.id === "lotto") delete ROLL.lotto; RAND = null; render(); } });
+document.addEventListener("change", e => {
+  if (e.target.id === "snowstart" || e.target.id === "snowgoal"){
+    const v = Number(e.target.value); if (!(v > 0)) return;
+    if (e.target.id === "snowstart"){ const fresh = SNOW.bank === SNOW.start && !SNOW.locked; SNOW.start = v; if (fresh) SNOW.bank = v; } else SNOW.goal = Math.max(v, SNOW.start * 2);
+    saveSnow(); render(); return;
+  } if (["lotto","minp","maxp","target"].includes(e.target.id)){ if (e.target.id === "lotto") delete ROLL.lotto; RAND = null; render(); } });
 
 function rebuild(){
   LEGS = [...(DATA.tennis ? tennisLegs(DATA.tennis) : []), ...(DATA.soccer ? soccerLegs(DATA.soccer) : []),
